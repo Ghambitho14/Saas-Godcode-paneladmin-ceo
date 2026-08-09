@@ -215,7 +215,8 @@ export function useManualOrderCheckoutFlow({
 			if (effectiveOpenMesaMode) {
 				return hasItems && hasClientName && isContextCustomerValid() && isDeliveryValidForOrder();
 			}
-			return hasItems && isContextCustomerValid() && hasPaymentType && paymentOk && isDeliveryValidForOrder();
+			// Pedidos web suelen llegar como pago pendiente; al editar no revalidamos cobro.
+			return hasItems && isContextCustomerValid() && isDeliveryValidForOrder();
 		}
 
 		if (effectiveOpenMesaMode) {

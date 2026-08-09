@@ -83,3 +83,57 @@ describe('venta rápida con pago diferido', () => {
         }]).isFormValid()).toBe(true);
     });
 });
+
+function editCheckoutFlowFor(overrides = {}) {
+    const manualOrder = {
+        v2Enabled: false,
+        order_type: 'delivery',
+        items: [{ id: 'product-1', quantity: 1 }],
+        client_name: 'Cliente web',
+        client_phone: '+56999999999',
+        client_rut: '',
+        total: 38500,
+        payment_type: 'pendiente',
+        payment_mode: 'single',
+        cash_amount: 0,
+        card_amount: 0,
+        cash_tendered: '',
+        delivery_address: 'Calle Nueva 123',
+        delivery_reference: 'Portón azul',
+        delivery_named_area_id: '',
+        delivery_km: '',
+        delivery_fee: 4000,
+        manualOrderSettings: normalizeManualOrderSettings(),
+        ...overrides.manualOrder,
+    };
+
+    return useManualOrderCheckoutFlow({
+        manualOrder,
+        couponPreview: null,
+        branchDeliveryCfg: {
+            deliveryPricingStrategy: 'flat',
+            flatFee: 4000,
+        },
+        branchDeliveryCfgLoading: false,
+        branchConfigError: null,
+        effectiveOpenMesaMode: false,
+        openMesaChargeNow: false,
+        isEditMode: true,
+        editOrder: { id: 'order-web-1', payment_type: 'pendiente' },
+        rutValid: true,
+        phoneValid: true,
+        orderStep: 2,
+        setOrderStep: vi.fn(),
+        wizardStepCount: 2,
+        isCompactNav: false,
+        showClassicPaymentStep: false,
+        showNotify: vi.fn(),
+        ...overrides.flow,
+    });
+}
+
+describe('edición de pedidos web pendientes', () => {
+    it('permite guardar cambios con payment_type pendiente', () => {
+        expect(editCheckoutFlowFor().isFormValid()).toBe(true);
+    });
+});
