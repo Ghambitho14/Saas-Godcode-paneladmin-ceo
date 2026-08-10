@@ -11,7 +11,7 @@ const SidebarIcon = ({ Icon, size }) => (
     </span>
 );
 
-const SIDEBAR_LOGO_PLACEHOLDER = '/Gcode-logo.svg';
+const SIDEBAR_LOGO_PLACEHOLDER = '/favicon.png';
 
 const AdminSidebar = ({ activeTab, setActiveTab, isMobile, kanbanColumns, userRole, onLogout, onStorefrontMissing, userEmail, branchName, logoUrl, canAccessTab, getTabDeniedMessage, onDeniedAccess, tabAccessContext, dynamicModules = [], storefrontMenuUrl = null, tabLabelsById = {} }) => {
     // Estado para evitar SSR mismatch en logo y brand-info

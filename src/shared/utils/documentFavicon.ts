@@ -1,5 +1,5 @@
-/** Fallback del `<link rel="icon">` en `index.html` (public/Gcode-logo.svg). */
-export const DEFAULT_FAVICON_HREF = "/Gcode-logo.svg";
+/** Fallback del `<link rel="icon">` en `index.html` (public/favicon.png). */
+export const DEFAULT_FAVICON_HREF = "/favicon.png";
 
 /**
  * URL lista para <img> / favicon.

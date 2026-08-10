@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
       devOptions: {
         enabled: true,
       },
-      includeAssets: ["favicon.svg", "Gcode-logo.svg"],
+      includeAssets: ["favicon.ico", "favicon.png", "favicon-32.png", "apple-touch-icon.png"],
       manifest: {
         name: "GodCode Caja",
         short_name: "GodCode",
@@ -31,17 +31,23 @@ export default defineConfig(({ mode }) => ({
         orientation: "portrait-primary",
         icons: [
           {
-            src: "/Gcode-logo.svg",
-            sizes: "512x512",
-            type: "image/svg+xml",
-            purpose: "any maskable",
+            src: "/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
           },
           {
-            src: "/favicon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
             purpose: "any",
-          }
+          },
+          {
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
         ]
       },
       workbox: {

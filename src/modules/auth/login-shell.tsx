@@ -102,7 +102,7 @@ export function LoginShell({ displayName }: LoginShellProps) {
                 </>
               ) : (
                 <img
-                  src="/Gcode-logo.svg"
+                  src="/favicon.png"
                   alt=""
                   className="login-sliding-panel__deco-img login-sliding-panel__deco-img--brand"
                 />
