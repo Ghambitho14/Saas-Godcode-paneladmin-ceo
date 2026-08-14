@@ -108,9 +108,12 @@ export function formatOrderNumberForTicket(order) {
 	return String(raw);
 }
 
-/** Texto central del ticket cliente: «En el local» vs domicilio (como Oishi). */
+/** Texto central del ticket cliente: Mesa / En el local / Domicilio. */
 export function whereLabelForClientTicket(order) {
-	return isOrderDelivery(order) ? 'Domicilio' : 'En el local';
+	const kind = getOrderFulfillmentKind(order);
+	if (kind === 'moto') return 'Domicilio';
+	if (kind === 'mesa') return 'Mesa';
+	return 'En el local';
 }
 
 /** Fulfillment en ticket cocina: Mesa / Retiro / Delivery (mayúsculas para banda térmica). */

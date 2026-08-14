@@ -20,7 +20,7 @@ import ManualOrderCheckout, {
 } from './manual-order/ManualOrderCheckout';
 import ManualOrderCloseConfirm from './manual-order/ManualOrderCloseConfirm';
 import useManualOrderBranchConfig from './manual-order/useManualOrderBranchConfig';
-import { isOpenOrderSessionStatus } from '../hooks/manual-order/manualOrderShared';
+import { getLocalFulfillmentMode, isOpenOrderSessionStatus } from '../hooks/manual-order/manualOrderShared';
 import { ADMIN_MOBILE_MQ, ADMIN_TABLET_MQ } from '../constants/responsive';
 import { Button } from "@/components/ui/button";
 import { useLockBodyScroll } from '@/shared/hooks/useLockBodyScroll';
@@ -104,6 +104,7 @@ const ManualOrderModal = ({
 	const hookActions = isEditMode ? editHook : createHook;
 	const {
 		manualOrder, loading, rutValid, phoneValid,
+		includeDocument, includePhone, setIncludeDocument, setIncludePhone,
 		receiptFile, receiptPreview,
 		updateClientName, updateCouponCode, couponPreview, updatePaymentType,
 		updatePaymentMode, updateCashAmount, updateCardAmount, updateCashTendered, updateChargeNow,
@@ -122,7 +123,9 @@ const ManualOrderModal = ({
 	const effectiveBranchConfigError = branchConfigError || manualOrder?.branchConfigError || null;
 
 	const openMesaChargeNow = showOpenMesaPaymentChoice && Boolean(manualOrder?.charge_now);
-	const showClassicPaymentStep = !effectiveOpenMesaMode && !isEditMode;
+	const isQuickSaleMesa = !effectiveOpenMesaMode
+		&& getLocalFulfillmentMode(manualOrder) === 'mesa';
+	const showClassicPaymentStep = !effectiveOpenMesaMode && !isEditMode && !isQuickSaleMesa;
 
 	const [orderStep, setOrderStep] = useState(1);
 	const [isCompactNav, setIsCompactNav] = useState(() => {
@@ -224,6 +227,11 @@ const ManualOrderModal = ({
 		}
 		setOrderStep(2);
 	}, [isOpen, isEditMode, pendingSeatReservation, selectTable, updateClientName]);
+
+	useEffect(() => {
+		if (showClassicPaymentStep || isEditMode) return;
+		setOrderStep((prev) => (prev > 2 ? 2 : prev));
+	}, [showClassicPaymentStep, isEditMode]);
 
 	useEffect(() => {
 		if (!isOpen || isEditMode || !draftSnapshot || !draftIdentity.companyId || !draftIdentity.branchId) return undefined;
@@ -343,13 +351,13 @@ const ManualOrderModal = ({
 	}, [closeAction]);
 	const recordAbandonment = React.useCallback(() => {
 		if (!manualOrder?.v2Enabled) return;
-		const localFulfillment = manualOrder?.order_type === 'delivery'
-			? 'delivery'
-			: (openMesaMode && manualOrder?.local_fulfillment_mode === 'mesa' ? 'table' : 'pickup');
+		const mode = getLocalFulfillmentMode(manualOrder);
+		const localFulfillment = mode === 'delivery' ? 'delivery' : mode === 'mesa' ? 'table' : 'pickup';
+		const createMode = openMesaMode || localFulfillment === 'table' ? 'session' : 'quick_sale';
 		void manualOrderV2Service.recordMetric({
 			branchId: branch?.id,
 			eventName: 'abandoned',
-			mode: openMesaMode ? 'session' : 'quick_sale',
+			mode: createMode,
 			fulfillment: localFulfillment,
 			step: orderStep,
 		});
@@ -655,6 +663,10 @@ const ManualOrderModal = ({
 							selectTable,
 							rutValid,
 							phoneValid,
+							includeDocument,
+							includePhone,
+							setIncludeDocument,
+							setIncludePhone,
 							receiptFile,
 							receiptPreview,
 						}}

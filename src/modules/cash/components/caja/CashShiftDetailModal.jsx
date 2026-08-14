@@ -135,6 +135,12 @@ function orderItemsSummary(items) {
     return `${items.length} productos · ${totalUnits} u.`;
 }
 
+function shiftClosedAtMs(shift) {
+    if (!shift?.closed_at) return null;
+    const ms = new Date(shift.closed_at).getTime();
+    return Number.isFinite(ms) ? ms : null;
+}
+
 const CashShiftDetailModal = ({ isOpen, onClose, shift, getTotals, orders = [], onMovementClick }) => {
     const { formatMoney: fmtHist } = useBranchMoney();
     const [movements, setMovements] = useState([]);
@@ -143,23 +149,28 @@ const CashShiftDetailModal = ({ isOpen, onClose, shift, getTotals, orders = [], 
 
     const shiftRowId = shift?.id ?? shift?.shift_id;
     const openedById = shift?.opened_by ?? null;
+    const closedAtMs = shiftClosedAtMs(shift);
+    const isShiftClosed = closedAtMs != null;
 
+    // Cancelaciones no generan cash_movements: se sintetizan desde `orders`.
+    // En turno abierto (p. ej. "Ver todos") no hay closed_at → ventana hasta ahora.
     const cancelledOrdersInShift = useMemo(() => {
-        if (!shift?.opened_at || !shift?.closed_at) return [];
+        if (!shift?.opened_at) return [];
         const branchId = shift.branch_id;
         if (branchId == null || branchId === '') return [];
         const openedAt = new Date(shift.opened_at).getTime();
-        const closedAt = new Date(shift.closed_at).getTime();
+        if (!Number.isFinite(openedAt)) return [];
+        const windowEnd = closedAtMs ?? Date.now();
         return (orders || [])
             .filter(
                 (o) =>
                     o?.status === 'cancelled' &&
                     String(o.branch_id) === String(branchId) &&
                     new Date(o.created_at).getTime() >= openedAt &&
-                    new Date(o.created_at).getTime() <= closedAt
+                    new Date(o.created_at).getTime() <= windowEnd
             )
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }, [shift, orders]);
+    }, [shift, orders, closedAtMs]);
 
     const movementsWithCancellations = useMemo(() => {
         const synthetic = (cancelledOrdersInShift || []).map((order) => ({
@@ -287,7 +298,8 @@ const CashShiftDetailModal = ({ isOpen, onClose, shift, getTotals, orders = [], 
 
     const cashDiff = (shift.actual_balance || 0) - (shift.expected_balance || 0);
     const isSurplus = cashDiff >= 0;
-    const reconciliation = shift.closed_at ? getClosedShiftReconciliation(shift, totals) : null;
+    const reconciliation = isShiftClosed ? getClosedShiftReconciliation(shift, totals) : null;
+    const headerDateSource = isShiftClosed ? shift.closed_at : shift.opened_at;
 
     const reconcileRows = [
         { key: 'cash', label: 'Efectivo' },
@@ -317,16 +329,18 @@ const CashShiftDetailModal = ({ isOpen, onClose, shift, getTotals, orders = [], 
                 <header className="modal-header cash-dialog__header cash-shift-detail-modal__header">
                     <div className="cash-shift-detail-modal__title-block">
                         <h3 id="cash-shift-detail-title" className="cash-dialog__title cash-shift-detail-modal__title">
-                            Turno cerrado
+                            {isShiftClosed ? 'Turno cerrado' : 'Turno activo'}
                         </h3>
                         <div className="cash-shift-detail-modal__meta">
                             <span>
-                                {new Date(shift.closed_at).toLocaleDateString('es-CL', {
-                                    weekday: 'short',
-                                    day: '2-digit',
-                                    month: 'long',
-                                    year: 'numeric',
-                                })}
+                                {headerDateSource
+                                    ? new Date(headerDateSource).toLocaleDateString('es-CL', {
+                                            weekday: 'short',
+                                            day: '2-digit',
+                                            month: 'long',
+                                            year: 'numeric',
+                                        })
+                                    : '—'}
                             </span>
                             <span className="cash-shift-detail-modal__badge">
                                 {shiftOrdersCount} {shiftOrdersCount === 1 ? 'pedido' : 'pedidos'}
@@ -359,10 +373,12 @@ const CashShiftDetailModal = ({ isOpen, onClose, shift, getTotals, orders = [], 
                                 <div className="cash-shift-detail-info-item">
                                     <span className="cash-shift-detail-info-item__label">Cierre</span>
                                     <span className="cash-shift-detail-info-item__value">
-                                        {new Date(shift.closed_at).toLocaleString('es-CL', {
-                                            dateStyle: 'short',
-                                            timeStyle: 'short',
-                                        })}
+                                        {isShiftClosed
+                                            ? new Date(shift.closed_at).toLocaleString('es-CL', {
+                                                    dateStyle: 'short',
+                                                    timeStyle: 'short',
+                                                })
+                                            : 'En curso'}
                                     </span>
                                 </div>
                                 <div className="cash-shift-detail-info-item">

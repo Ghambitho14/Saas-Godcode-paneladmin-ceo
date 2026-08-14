@@ -3,7 +3,9 @@ import { Check, CheckCircle2, ChevronDown, ChevronUp, ShoppingBag, Banknote } fr
 import {
 	getLocalFulfillmentMode,
 	hasManualOrderPaymentIntent,
+	isBlankClientDocument,
 	isOpenMesaMeseroMode,
+	phoneHasMeaningfulDigits,
 	validateManualDeliveryDetails,
 } from '../../hooks/manual-order/manualOrderShared';
 import {
@@ -149,9 +151,9 @@ export function useManualOrderCheckoutFlow({
 	};
 
 	const fulfillmentForValidation = () => (
-		manualOrder.order_type === 'delivery'
+		manualOrder.order_type === 'delivery' || getLocalFulfillmentMode(manualOrder) === 'delivery'
 			? 'delivery'
-			: effectiveOpenMesaMode && getLocalFulfillmentMode(manualOrder) === 'mesa'
+			: getLocalFulfillmentMode(manualOrder) === 'mesa'
 				? 'table'
 				: 'pickup'
 	);
@@ -160,9 +162,8 @@ export function useManualOrderCheckoutFlow({
 		const requirements = requirementsFor(manualOrder.manualOrderSettings, fulfillmentForValidation());
 		const name = String(manualOrder.client_name ?? '').trim();
 		const phone = String(manualOrder.client_phone ?? '').trim();
-		const document = String(manualOrder.client_rut ?? '').trim();
-		const phoneDigits = phone.replace(/\D/g, '');
-		const phoneMeaningful = phoneDigits.length > 3;
+		const document = isBlankClientDocument(manualOrder.client_rut) ? '' : String(manualOrder.client_rut ?? '').trim();
+		const phoneMeaningful = phoneHasMeaningfulDigits(phone);
 		return (
 			(!requirements.name || name.length >= 2)
 			&& (!requirements.operatorReference || name.length >= 2)
@@ -291,7 +292,9 @@ export function useManualOrderCheckoutFlow({
 					: ['Productos', 'Abrir mesa']))
 			: (isEditMode
 				? ['Productos', 'Cliente']
-				: ['Productos', 'Entrega', 'Pago opcional']));
+				: (showClassicPaymentStep
+					? ['Productos', 'Entrega', 'Pago opcional']
+					: ['Productos', 'Entrega'])));
 
 	return {
 		totalToPay,
@@ -453,8 +456,10 @@ export default function ManualOrderCheckout({
 		? 'GUARDAR CAMBIOS'
 		: effectiveOpenMesaMode
 			? openMesaSubmitLabel
-			: 'CREAR PEDIDO';
-	const quickSaleHasPayment = !effectiveOpenMesaMode && hasManualOrderPaymentIntent(manualOrder);
+			: (getLocalFulfillmentMode(manualOrder) === 'mesa' ? 'ABRIR MESA' : 'CREAR PEDIDO');
+	const quickSaleHasPayment = !effectiveOpenMesaMode
+		&& getLocalFulfillmentMode(manualOrder) !== 'mesa'
+		&& hasManualOrderPaymentIntent(manualOrder);
 	const tableMustDeferPayment = effectiveOpenMesaMode && openMesaFulfillment === 'mesa';
 	const immediateSessionAllowed = !effectiveOpenMesaMode ? true : tableMustDeferPayment ? false
 		: manualOrder.manualOrderSettings?.allowImmediateSessionPayment?.[
@@ -493,6 +498,10 @@ export default function ManualOrderCheckout({
 		getInputStyle,
 		rutValid,
 		phoneValid,
+		includeDocument = false,
+		includePhone = false,
+		setIncludeDocument,
+		setIncludePhone,
 		receiptFile,
 		receiptPreview,
 	} = hookActions;
@@ -523,6 +532,10 @@ export default function ManualOrderCheckout({
 			handlePhoneChange={handlePhoneChange}
 			rutValid={rutValid}
 			phoneValid={phoneValid}
+			includeDocument={includeDocument}
+			includePhone={includePhone}
+			setIncludeDocument={setIncludeDocument}
+			setIncludePhone={setIncludePhone}
 			getInputStyle={getInputStyle}
 			branch={branch}
 			showNotify={showNotify}

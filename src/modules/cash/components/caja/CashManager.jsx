@@ -445,10 +445,16 @@ const CashManager = ({
                 ) : (
                     <div className="cash-history-list">
                         {filteredShifts.map(shift => {
-                            const diff = shift.difference ?? ((shift.actual_balance || 0) - (shift.expected_balance || 0));
                             const durationStr = formatShiftDuration(shift.opened_at, shift.closed_at);
                             const hoursRange = formatShiftHoursRange(shift.opened_at, shift.closed_at);
                             const ordersCount = Number(shift.orders_count ?? 0);
+                            const summary = shift.summary || {
+                                income: 0,
+                                cash: 0,
+                                card: 0,
+                                online: 0,
+                                deliveryPending: 0,
+                            };
 
                             return (
                                 <div key={shift.id} className="cash-history-card" onClick={() => setViewingShift(shift)}>
@@ -469,18 +475,24 @@ const CashManager = ({
 
                                     <div className="cash-history-amounts">
                                         <div className="cash-history-col">
-                                            <label>Sistema</label>
-                                            <span>{fmt(shift.expected_balance)}</span>
+                                            <label>Ingresos</label>
+                                            <span className="cash-history-col__income">+{fmt(summary.income)}</span>
                                         </div>
                                         <div className="cash-history-col">
-                                            <label>Conteo</label>
-                                            <span>{fmt(shift.actual_balance)}</span>
+                                            <label>Delivery</label>
+                                            <span className="cash-history-col__delivery">{fmt(summary.deliveryPending)}</span>
                                         </div>
                                         <div className="cash-history-col">
-                                            <label>Diferencia</label>
-                                            <span className={diff >= 0 ? 'diff-positive' : 'diff-negative'}>
-                                                {diff >= 0 ? '+' : ''}{fmt(Math.abs(diff))}
-                                            </span>
+                                            <label>Efectivo</label>
+                                            <span>{fmt(summary.cash)}</span>
+                                        </div>
+                                        <div className="cash-history-col">
+                                            <label>Tarjeta</label>
+                                            <span>{fmt(summary.card)}</span>
+                                        </div>
+                                        <div className="cash-history-col">
+                                            <label>Transf.</label>
+                                            <span>{fmt(summary.online)}</span>
                                         </div>
                                     </div>
 

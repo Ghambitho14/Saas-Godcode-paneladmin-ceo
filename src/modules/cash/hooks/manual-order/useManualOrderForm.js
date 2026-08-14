@@ -7,6 +7,8 @@ import {
     OPEN_MESA_CAJA_DEFAULTS,
     applyLocalFulfillmentMode,
     applyMesaPartyMode,
+    isBlankClientDocument,
+    phoneHasMeaningfulDigits,
 } from './manualOrderShared';
 import { parseMoneyInput, minorToMajor } from '@/lib/money/minor-units';
 
@@ -17,7 +19,7 @@ const initialFormState = MANUAL_ORDER_INITIAL_FORM_STATE;
  * nombre del cliente, RUT (formateo y validación), teléfono, notas del pedido, tipo de despacho,
  * dirección de entrega, kilómetros, tarifas y comprobantes de pago.
  */
-export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'CL', moneyOptions = {}) => {
+export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'CL', moneyOptions = {}, openMesaMode = false) => {
     const strategy = useMemo(() => getFormStrategy(formCountry), [formCountry]);
     const resolvedChannels = useMemo(
         () => parseLocalOrderChannels(enabledLocalChannels),
@@ -30,6 +32,33 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
     const [form, setForm] = useState(() => ({ ...initialFormState }));
     const [rutValid, setRutValid] = useState(true);
     const [phoneValid, setPhoneValid] = useState(true);
+    const [includeDocument, setIncludeDocumentState] = useState(false);
+    const [includePhone, setIncludePhoneState] = useState(false);
+
+    const setIncludeDocument = useCallback((enabled) => {
+        const next = Boolean(enabled);
+        setIncludeDocumentState(next);
+        if (!next) {
+            setForm((prev) => ({ ...prev, client_rut: '' }));
+            setRutValid(true);
+        }
+    }, []);
+
+    const setIncludePhone = useCallback((enabled) => {
+        const next = Boolean(enabled);
+        setIncludePhoneState(next);
+        if (!next) {
+            setForm((prev) => ({ ...prev, client_phone: '' }));
+            setPhoneValid(true);
+        } else {
+            setForm((prev) => {
+                const current = String(prev.client_phone ?? '').trim();
+                if (current) return prev;
+                return { ...prev, client_phone: strategy.phonePrefix };
+            });
+            setPhoneValid(true);
+        }
+    }, [strategy.phonePrefix]);
 
     const updateClientName = useCallback((val, opts = {}) => {
         setForm((prev) => {
@@ -50,11 +79,13 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
     }, []);
 
     const updateOrderType = useCallback((val) => {
+        if (val === 'delivery') setIncludePhone(true);
         setForm((prev) => {
             if (val === 'pickup') {
                 return {
                     ...prev,
                     order_type: val,
+					local_fulfillment_mode: 'retiro',
                     delivery_named_area_id: '',
                     delivery_fee: 0,
                     delivery_address: '',
@@ -63,13 +94,18 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
                 };
             }
 
-            return { ...prev, order_type: val };
+            return {
+				...prev,
+				order_type: val,
+				...(val === 'delivery' ? { local_fulfillment_mode: 'delivery' } : {}),
+			};
         });
-    }, []);
+    }, [setIncludePhone]);
 
-    const updateLocalFulfillmentMode = useCallback((mode, branchDeliveryCfg = null, subtotal = 0) => {
-        setForm((prev) => applyLocalFulfillmentMode(prev, mode, branchDeliveryCfg, subtotal));
-    }, []);
+    const updateLocalFulfillmentMode = useCallback((mode) => {
+        if (mode === 'delivery') setIncludePhone(true);
+        setForm((prev) => applyLocalFulfillmentMode(prev, mode, { preserveClient: !openMesaMode }));
+    }, [openMesaMode, setIncludePhone]);
 
     const updateMesaPartyMode = useCallback((mode) => {
         setForm((prev) => applyMesaPartyMode(prev, mode));
@@ -203,7 +239,7 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
 
         const name = String(client.name ?? '').trim();
         const rutRaw = String(client.rut ?? client.document ?? '').trim();
-        const rut = rutRaw ? strategy.formatId(rutRaw) : '';
+        const rut = rutRaw && !isBlankClientDocument(rutRaw) ? strategy.formatId(rutRaw) : '';
         const phone = normalizeManualPhone(client.phone) || strategy.phonePrefix;
         const clientId = client.id != null ? String(client.id) : '';
 
@@ -215,21 +251,37 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
             selected_client_id: clientId,
         }));
 
-        setRutValid(rut ? strategy.validateId(rut) : false);
-        setPhoneValid(strategy.validatePhone(phone));
+        if (rut) setIncludeDocumentState(true);
+        if (phoneHasMeaningfulDigits(phone, strategy.phonePrefix)) {
+            setIncludePhoneState(true);
+        }
+
+        setRutValid(rut ? strategy.validateId(rut) : true);
+        setPhoneValid(
+            !phoneHasMeaningfulDigits(phone, strategy.phonePrefix) || strategy.validatePhone(phone),
+        );
     }, [strategy]);
 
 	const resetForm = useCallback(() => {
         setForm({ ...initialFormState });
         setRutValid(true);
         setPhoneValid(true);
+        setIncludeDocumentState(false);
+        setIncludePhoneState(false);
 	}, []);
 
 	const restoreForm = useCallback((nextForm) => {
 		if (!nextForm || typeof nextForm !== 'object') return;
-		setForm({ ...initialFormState, ...nextForm });
-		setRutValid(!nextForm.client_rut || strategy.validateId(nextForm.client_rut));
-		setPhoneValid(!nextForm.client_phone || strategy.validatePhone(nextForm.client_phone));
+		const rut = isBlankClientDocument(nextForm.client_rut) ? '' : String(nextForm.client_rut ?? '');
+		const phone = String(nextForm.client_phone ?? '');
+		const isDelivery =
+			String(nextForm.order_type ?? '').toLowerCase() === 'delivery'
+			|| String(nextForm.local_fulfillment_mode ?? '').toLowerCase() === 'delivery';
+		setForm({ ...initialFormState, ...nextForm, client_rut: rut });
+		setRutValid(!rut || strategy.validateId(rut));
+		setPhoneValid(!phoneHasMeaningfulDigits(phone, strategy.phonePrefix) || strategy.validatePhone(phone));
+		setIncludeDocumentState(Boolean(rut));
+		setIncludePhoneState(isDelivery || phoneHasMeaningfulDigits(phone, strategy.phonePrefix));
 	}, [strategy]);
 
     const resetOpenMesaForm = useCallback(() => {
@@ -248,6 +300,8 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
         });
         setRutValid(true);
         setPhoneValid(true);
+        setIncludeDocumentState(false);
+        setIncludePhoneState(false);
     }, []);
 
 	const selectTable = useCallback((table) => {
@@ -285,6 +339,10 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
         form,
         rutValid,
         phoneValid,
+        includeDocument,
+        includePhone,
+        setIncludeDocument,
+        setIncludePhone,
         updateClientName,
         updateCouponCode,
         updateNote,

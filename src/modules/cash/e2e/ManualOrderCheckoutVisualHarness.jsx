@@ -156,6 +156,10 @@ export default function ManualOrderCheckoutVisualHarness() {
 		getInputStyle: () => ({}),
 		rutValid: true,
 		phoneValid: true,
+		includeDocument: false,
+		includePhone: false,
+		setIncludeDocument: () => {},
+		setIncludePhone: () => {},
 		receiptFile: null,
 		receiptPreview: null,
 	};

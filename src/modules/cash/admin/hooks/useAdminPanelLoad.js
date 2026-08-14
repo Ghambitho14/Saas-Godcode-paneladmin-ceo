@@ -181,14 +181,14 @@ export function useAdminPanelLoad({
 	const fetchClients = useCallback(async ({ force = false } = {}) => {
 		if (!companyId) return;
 		const data = await getCompanyClients(companyId, async () => {
-			const { data: rows, error } = await supabase
-				.from(TABLES.clients)
-				.select(CLIENTS_PANEL_SELECT)
-				.eq('company_id', companyId)
-				.order('last_order_at', { ascending: false })
-				.limit(200);
-			if (error) throw error;
-			return rows || [];
+			return fetchAllPaginated(
+				supabase
+					.from(TABLES.clients)
+					.select(CLIENTS_PANEL_SELECT)
+					.eq('company_id', companyId)
+					.order('last_order_at', { ascending: false, nullsFirst: false }),
+				{ pageSize: PANEL_PAGINATION_PAGE_SIZE },
+			);
 		}, { force });
 		setClients(data || []);
 	}, [companyId, setClients]);

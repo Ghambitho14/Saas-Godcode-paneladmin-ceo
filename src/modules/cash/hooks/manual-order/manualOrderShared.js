@@ -25,8 +25,9 @@ export const MANUAL_ORDER_INITIAL_FORM_STATE = {
 	card_amount: 0,
 	cash_tendered: '',
 	order_type: 'pickup',
-	local_fulfillment_mode: 'mesa',
-	mesa_party_mode: 'mesero',
+	// Pedido manual (quick_sale) arranca en retiro; Abrir mesa fuerza `mesa` en resetOpenMesaForm.
+	local_fulfillment_mode: 'retiro',
+	mesa_party_mode: 'cliente',
 	delivery_address: '',
 	delivery_reference: '',
 	delivery_km: '',
@@ -146,14 +147,24 @@ function withCajaContactDefaults(fields = {}) {
 	};
 }
 
-/** Aplica mesa | retiro | delivery al formulario de abrir sesión local. */
-export function applyLocalFulfillmentMode(prev, mode) {
+/**
+ * Aplica mesa | retiro | delivery al formulario.
+ * En venta rápida (`preserveClient`) conserva el cliente elegido; en abrir mesa
+ * sigue usando identidad CAJA / mesero.
+ */
+export function applyLocalFulfillmentMode(prev, mode, options = {}) {
+	const preserveClient = Boolean(options?.preserveClient);
+
 	if (mode === 'delivery') {
-		return withCajaContactDefaults({
+		const next = {
 			...prev,
 			local_fulfillment_mode: 'delivery',
 			mesa_party_mode: 'cliente',
 			order_type: 'delivery',
+		};
+		if (preserveClient) return next;
+		return withCajaContactDefaults({
+			...next,
 			client_name:
 				prev.client_name === OPEN_MESA_DEFAULT_CLIENT_NAMES.mesa ||
 				prev.client_name === OPEN_MESA_DEFAULT_CLIENT_NAMES.retiro ||
@@ -172,16 +183,40 @@ export function applyLocalFulfillmentMode(prev, mode) {
 		delivery_address: '',
 		delivery_reference: '',
 		delivery_km: '',
-		selected_client_id: '',
 	};
 
 	if (mode === 'mesa') {
-		return withCajaContactDefaults({
+		const mesaBase = {
 			...base,
 			local_fulfillment_mode: 'mesa',
+			charge_now: false,
+			payment_type: 'pendiente',
+			payment_mode: 'single',
+			cash_amount: 0,
+			card_amount: 0,
+			cash_tendered: '',
+			payment_lines: [],
+		};
+		if (preserveClient) {
+			return {
+				...mesaBase,
+				mesa_party_mode: prev.mesa_party_mode || 'cliente',
+			};
+		}
+		return withCajaContactDefaults({
+			...mesaBase,
 			mesa_party_mode: 'mesero',
 			client_name: '',
+			selected_client_id: '',
 		});
+	}
+
+	if (preserveClient) {
+		return {
+			...base,
+			local_fulfillment_mode: 'retiro',
+			mesa_party_mode: 'cliente',
+		};
 	}
 
 	const retiroDefault = OPEN_MESA_DEFAULT_CLIENT_NAMES.retiro;
@@ -197,6 +232,7 @@ export function applyLocalFulfillmentMode(prev, mode) {
 		local_fulfillment_mode: 'retiro',
 		mesa_party_mode: 'cliente',
 		client_name: keepCustomName ? prev.client_name : retiroDefault,
+		selected_client_id: '',
 	});
 }
 
@@ -443,4 +479,23 @@ export function resolveOpenMesaCheckoutPayment(form, checkoutTotal) {
 /** Sanitiza texto libre del formulario de pedido manual. */
 export function sanitizeManualOrderInput(text) {
 	return text ? String(text).replace(/<[^>]*>/g, '').trim() : '';
+}
+
+/**
+ * Documento vacío o placeholder de display (p. ej. sanitizeOrder → "Sin RUT").
+ * No debe tratarse como valor editable ni bloquear validación.
+ */
+export function isBlankClientDocument(value) {
+	const v = String(value ?? '').trim();
+	if (!v) return true;
+	return /^sin\s+rut$/i.test(v);
+}
+
+/** Teléfono con dígitos más allá del prefijo de país (p. ej. +56). */
+export function phoneHasMeaningfulDigits(phone, prefix = '') {
+	const valueDigits = String(phone ?? '').replace(/\D/g, '');
+	const prefixDigits = String(prefix ?? '').replace(/\D/g, '');
+	if (!valueDigits) return false;
+	if (!prefixDigits) return valueDigits.length > 0;
+	return valueDigits.length > prefixDigits.length;
 }

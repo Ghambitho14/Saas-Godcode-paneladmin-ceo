@@ -37,3 +37,32 @@ export function normalizeManualPhone(phone) {
 export function normalizePhoneForSearch(phone) {
 	return normalizePhoneDigits(phone);
 }
+
+const normalizeSearch = (value) => String(value ?? '').trim().toLowerCase();
+const normalizeDocForSearch = (value) => String(value ?? '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+/**
+ * Autocomplete de clientes del pedido manual: coincidencia parcial por nombre, teléfono o documento.
+ * @param {unknown[]} clients
+ * @param {unknown} query
+ * @param {{ limit?: number }} [options]
+ * @returns {unknown[]}
+ */
+export function filterClientsByNameOrPhone(clients, query, options = {}) {
+	const q = normalizeSearch(query);
+	const qDigits = normalizePhoneForSearch(query);
+	const qDoc = normalizeDocForSearch(query);
+	const limit = Number.isFinite(options.limit) ? Math.max(0, options.limit) : 8;
+	if (!q || !Array.isArray(clients)) return [];
+	return clients
+		.filter((c) => {
+			const name = normalizeSearch(c?.name);
+			const rut = normalizeDocForSearch(c?.rut ?? c?.document);
+			const phoneDigits = normalizePhoneForSearch(c?.phone);
+			const nameMatch = name.includes(q);
+			const rutMatch = qDoc.length >= 3 && rut.includes(qDoc);
+			const phoneMatch = qDigits.length >= 3 && phoneDigits.includes(qDigits);
+			return nameMatch || rutMatch || phoneMatch;
+		})
+		.slice(0, limit);
+}

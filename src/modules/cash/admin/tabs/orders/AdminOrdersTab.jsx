@@ -20,6 +20,7 @@ export default function AdminOrdersTab({ logoUrl, companyName }) {
 		categories,
 		localOrderChannels,
 		upsertOrder,
+		refreshClients,
 		refreshOrders,
 		isHistoryView,
 		ordersViewMode,
@@ -38,6 +39,10 @@ export default function AdminOrdersTab({ logoUrl, companyName }) {
 
 	const tabLabels = resolvedTabLabels || {};
 	const ordersLabel = tabLabels.orders || 'Pedidos';
+	const handleOrderSaved = React.useCallback((savedOrder) => {
+		upsertOrder(savedOrder);
+		void refreshClients();
+	}, [upsertOrder, refreshClients]);
 
 	if (isHistoryView) {
 		return (
@@ -75,7 +80,7 @@ export default function AdminOrdersTab({ logoUrl, companyName }) {
 					products={products}
 					categories={categories}
 					localOrderChannels={localOrderChannels}
-					onOrderSaved={upsertOrder}
+					onOrderSaved={handleOrderSaved}
 				/>
 			</AdminErrorBoundary>
 		);
@@ -98,7 +103,7 @@ export default function AdminOrdersTab({ logoUrl, companyName }) {
 				products={products}
 				categories={categories}
 				localOrderChannels={localOrderChannels}
-				onOrderSaved={upsertOrder}
+				onOrderSaved={handleOrderSaved}
 			/>
 		</AdminErrorBoundary>
 	);

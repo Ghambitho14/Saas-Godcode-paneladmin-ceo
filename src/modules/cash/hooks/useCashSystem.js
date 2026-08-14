@@ -617,17 +617,34 @@ export const useCashSystem = (showNotify, branchId, orders = [], options = {}) =
             .limit(limit);
         if (error) throw error;
         
-        // Calcular totales de transferencias y conteo de pedidos para cada turno
-        const result = data.map(shift => {
+        const result = data.map((shift) => {
             const movements = shift.cash_movements || [];
-            const totalOnline = movements
-                .filter(m => m.payment_method === 'online' && m.type === 'sale')
-                .reduce((sum, m) => sum + (Number(m.amount) || 0), 0);
+            const totals = computeShiftTotals(movements);
+            const deliveryNet = Math.max(
+                0,
+                (Number(totals.deliveryCollected) || 0) - (Number(totals.deliveryRefunded) || 0),
+            );
+            const deliveryPending = Math.max(
+                0,
+                deliveryNet - (Number(totals.deliveryPaidToCourier) || 0),
+            );
             const ordersCount = Array.isArray(shift.orders)
                 ? Number(shift.orders[0]?.count ?? 0)
                 : 0;
 
-            return { ...shift, total_online: totalOnline, orders_count: ordersCount };
+            return {
+                ...shift,
+                total_online: Number(totals.online) || 0,
+                orders_count: ordersCount,
+                summary: {
+                    income: Number(totals.income) || 0,
+                    cash: Number(totals.cash) || 0,
+                    card: Number(totals.card) || 0,
+                    online: Number(totals.online) || 0,
+                    deliveryPending,
+                    deliveryNet,
+                },
+            };
         });
 
         return result;

@@ -9,12 +9,13 @@ import { haversineKm, isValidLatLng } from '@/lib/geo';
 import {
     effectiveDeliveryPricingMode,
 } from '@/lib/delivery-settings';
-import { normalizePhoneForSearch } from '../../services/clientService';
+import { filterClientsByNameOrPhone } from '../../services/clientService';
 import {
     getLocalFulfillmentMode,
     isManualNamedDeliveryMode,
     isOpenMesaMeseroMode,
     LOCAL_FULFILLMENT_MODES,
+    phoneHasMeaningfulDigits,
     validateManualDeliveryDetails,
 } from '../../hooks/manual-order/manualOrderShared';
 import { listRecentWaiters } from '../../utils/recentWaitersStorage';
@@ -32,21 +33,55 @@ import { resolveEffectiveCountry, isVenezuelaCountry } from '@/lib/geo/tenant-lo
 const sectionCardClass = 'manual-order-step-card flex min-h-0 flex-col overflow-visible rounded-[18px] border border-gc-border bg-gc-card p-4 shadow-sm sm:p-5';
 const inputClass =
     `w-full rounded-[12px] border border-gc-border bg-gc-page px-3.5 py-3 ${textScale.body} text-gc-text placeholder:text-gc-text-muted focus:border-gc-accent focus:outline-none focus:ring-2 focus:ring-gc-accent/15`;
-const inputReadonlyClass =
-    'cursor-not-allowed border-gc-border/50 bg-gc-muted/60 text-gc-text-muted focus:ring-0';
 const hintClass =
     `mt-3 rounded-[12px] border border-gc-accent/20 bg-gc-accent/10 px-3 py-2.5 ${textScale.body} leading-relaxed text-gc-text-muted`;
 const inlineActionClass =
     `inline-flex min-h-[42px] items-center gap-1.5 self-start rounded-[12px] border border-gc-border bg-gc-card px-3.5 py-2 ${textScale.body} font-semibold text-gc-text transition-colors hover:border-gc-accent/30 disabled:cursor-not-allowed disabled:opacity-50`;
 const fieldLabelClass = `flex flex-col ${spacing.compact} ${textScale.micro} font-semibold text-gc-text-muted`;
 
-const phoneHasMeaningfulDigits = (phone, prefix) => {
-    const valueDigits = String(phone ?? '').replace(/\D/g, '');
-    const prefixDigits = String(prefix ?? '').replace(/\D/g, '');
-    if (!valueDigits) return false;
-    if (!prefixDigits) return valueDigits.length > 0;
-    return valueDigits.length > prefixDigits.length;
-};
+const fieldSwitchTrackClass = (on, locked) => cn(
+	'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors',
+	on ? 'border-gc-accent bg-gc-accent' : 'border-gc-border bg-gc-muted',
+	locked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
+);
+
+const FieldIncludeSwitch = ({
+	id,
+	label,
+	checked,
+	onCheckedChange,
+	locked = false,
+	required = false,
+}) => (
+	<div className="flex items-center justify-between gap-3">
+		<label htmlFor={id} className={`${textScale.micro} font-semibold text-gc-text-muted`}>
+			{label}
+			{required
+				? <span className="text-gc-danger"> *</span>
+				: <span className="font-normal text-gc-text-muted"> (opcional)</span>}
+		</label>
+		<button
+			id={id}
+			type="button"
+			role="switch"
+			aria-checked={checked}
+			aria-label={label}
+			disabled={locked}
+			className={fieldSwitchTrackClass(checked, locked)}
+			onClick={() => {
+				if (locked) return;
+				onCheckedChange?.(!checked);
+			}}
+		>
+			<span
+				className={cn(
+					'pointer-events-none block h-5 w-5 rounded-full bg-white shadow transition-transform',
+					checked ? 'translate-x-[22px]' : 'translate-x-0.5',
+				)}
+			/>
+		</button>
+	</div>
+);
 
 const highlightClientMatch = (text, query) => {
     const value = String(text ?? '');
@@ -76,19 +111,6 @@ const sanitizeInputLive = (text) => {
 
 const normalizeSearch = (value) => String(value ?? '').trim().toLowerCase();
 
-const filterClientsByNameOrPhone = (clients, query) => {
-    const q = normalizeSearch(query);
-    const qDigits = normalizePhoneForSearch(query);
-    if (!q || !Array.isArray(clients)) return [];
-    return clients
-        .filter((c) => {
-            const name = normalizeSearch(c?.name);
-            const phoneDigits = normalizePhoneForSearch(c?.phone);
-            return name.startsWith(q) || (qDigits.length >= 3 && phoneDigits.startsWith(qDigits));
-        })
-        .slice(0, 8);
-};
-
 /**
  * Paso Cliente: dos columnas (datos cliente | retiro/delivery).
  */
@@ -110,6 +132,10 @@ const ClientForm = ({
     handlePhoneChange,
     rutValid,
     phoneValid,
+    includeDocument = false,
+    includePhone = false,
+    setIncludeDocument,
+    setIncludePhone,
     getInputStyle,
     branch,
     showNotify,
@@ -215,9 +241,18 @@ const ClientForm = ({
 			settingsFulfillments.delivery,
         ],
     );
-    const openMesaFulfillmentMode = openMesaMode ? getLocalFulfillmentMode(manualOrder) : null;
-	const contextualFulfillment = isDelivery ? 'delivery' : openMesaFulfillmentMode === 'mesa' ? 'table' : 'pickup';
+    const localFulfillmentMode = getLocalFulfillmentMode(manualOrder);
+    const openMesaFulfillmentMode = openMesaMode ? localFulfillmentMode : null;
+	const isQuickSaleMesa = !openMesaMode && localFulfillmentMode === 'mesa';
+	const contextualFulfillment = isDelivery || localFulfillmentMode === 'delivery'
+		? 'delivery'
+		: localFulfillmentMode === 'mesa'
+			? 'table'
+			: 'pickup';
 	const customerRequirements = requirementsFor(manualOrder.manualOrderSettings, contextualFulfillment);
+	const phoneLockedOn = Boolean(customerRequirements.phone) || contextualFulfillment === 'delivery';
+	const showDocumentField = Boolean(includeDocument);
+	const showPhoneField = Boolean(includePhone) || phoneLockedOn;
 	const requiredMark = (required) => required
 		? <span className="text-gc-danger"> *</span>
 		: <span className="font-normal text-gc-text-muted"> (opcional)</span>;
@@ -549,9 +584,13 @@ const ClientForm = ({
 			if (fallback) updateLocalFulfillmentMode?.(fallback);
 			return;
 		}
-		if (isDelivery && settingsFulfillments.delivery === false && settingsFulfillments.pickup !== false) handleOrderTypeChange('pickup');
-		if (!isDelivery && settingsFulfillments.pickup === false && settingsFulfillments.delivery !== false) handleOrderTypeChange('delivery');
-	}, [openMesaMode, manualOrder.local_fulfillment_mode, isDelivery, resolvedLocalChannels, settingsFulfillments.pickup, settingsFulfillments.delivery]);
+		const current = getLocalFulfillmentMode(manualOrder);
+		if (current === 'mesa' && resolvedLocalChannels.mesa) return;
+		if (current === 'delivery' && resolvedLocalChannels.delivery) return;
+		if (current === 'retiro' && resolvedLocalChannels.retiro) return;
+		const fallback = ['retiro', 'delivery', 'mesa'].find((mode) => resolvedLocalChannels[mode]);
+		if (fallback) updateLocalFulfillmentMode?.(fallback);
+	}, [openMesaMode, manualOrder.local_fulfillment_mode, isDelivery, resolvedLocalChannels, updateLocalFulfillmentMode]);
 
     const validationIcon = (
         <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
@@ -669,52 +708,69 @@ const ClientForm = ({
                 </div>
             )}
 
-            <div className="relative w-full">
-                <input
-                    type="text"
-                    placeholder={`${formStrategy.idName}${customerRequirements.document ? ' *' : ' (opcional)'}`}
-                    className={cn(inputClass, lockIdentityFields && inputReadonlyClass)}
-                    value={manualOrder.client_rut}
-                    onChange={handleRutChange}
-                    readOnly={lockIdentityFields}
-                    aria-readonly={lockIdentityFields}
-                    style={{
-                        ...(lockIdentityFields ? {} : getInputStyle(rutValid)),
-                        paddingRight: !lockIdentityFields && rutValid ? '40px' : undefined,
-                    }}
-                />
-                {!lockIdentityFields && rutValid ? validationIcon : null}
-            </div>
+			{!lockIdentityFields ? (
+				<>
+					<div className="grid gap-2">
+						<FieldIncludeSwitch
+							id="open-mesa-include-document"
+							label={formStrategy.idName}
+							checked={showDocumentField}
+							onCheckedChange={setIncludeDocument}
+							required={customerRequirements.document}
+						/>
+						{showDocumentField ? (
+							<div className="relative w-full">
+								<input
+									type="text"
+									placeholder={`Ingresa ${formStrategy.idName}`}
+									className={inputClass}
+									value={manualOrder.client_rut}
+									onChange={handleRutChange}
+									style={{
+										...(manualOrder.client_rut ? getInputStyle(rutValid) : {}),
+										paddingRight: manualOrder.client_rut && rutValid ? '40px' : undefined,
+									}}
+								/>
+								{manualOrder.client_rut && rutValid ? validationIcon : null}
+							</div>
+						) : null}
+					</div>
 
-            <div className="relative w-full">
-                <input
-                    type="tel"
-                    placeholder={`${formStrategy.phonePrefix}…${customerRequirements.phone ? ' *' : ''}`}
-                    className={cn(inputClass, lockIdentityFields && inputReadonlyClass)}
-                    value={manualOrder.client_phone}
-                    onChange={handlePhoneChange}
-                    readOnly={lockIdentityFields}
-                    aria-readonly={lockIdentityFields}
-                    style={{
-                        ...(lockIdentityFields
-							? {}
-							: phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix)
-								? getInputStyle(phoneValid)
-								: {}),
-                        paddingRight:
-							!lockIdentityFields
-							&& phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix)
-							&& phoneValid
-								? '40px'
-								: undefined,
-                    }}
-                />
-                {!lockIdentityFields
-					&& phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix)
-					&& phoneValid
-					? validationIcon
-					: null}
-            </div>
+					<div className="grid gap-2">
+						<FieldIncludeSwitch
+							id="open-mesa-include-phone"
+							label="Teléfono"
+							checked={showPhoneField}
+							onCheckedChange={setIncludePhone}
+							locked={phoneLockedOn}
+							required={customerRequirements.phone || phoneLockedOn}
+						/>
+						{showPhoneField ? (
+							<div className="relative w-full">
+								<input
+									type="tel"
+									placeholder={`${formStrategy.phonePrefix}…`}
+									className={inputClass}
+									value={manualOrder.client_phone}
+									onChange={handlePhoneChange}
+									style={{
+										...(phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix)
+											? getInputStyle(phoneValid)
+											: {}),
+										paddingRight:
+											phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix) && phoneValid
+												? '40px'
+												: undefined,
+									}}
+								/>
+								{phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix) && phoneValid
+									? validationIcon
+									: null}
+							</div>
+						) : null}
+					</div>
+				</>
+			) : null}
 
             {lockIdentityFields ? (
                 <p className={hintClass}>
@@ -1110,111 +1166,203 @@ const ClientForm = ({
         <div className="w-full">
             <div className={`manual-order-client-form-grid grid grid-cols-1 ${spacing.normal} lg:grid-cols-2 lg:items-start`}>
             <div className={sectionCardClass}>
-                <SectionHeader icon={User} tone="accent">Datos cliente</SectionHeader>
+                <SectionHeader icon={User} tone="accent">
+					{isQuickSaleMesa ? 'Referencia de mesa' : 'Datos cliente'}
+				</SectionHeader>
                 <p className={`mb-3 ${textScale.micro} leading-relaxed text-gc-text-muted`}>
-                    Busca un cliente registrado o completa sus datos de contacto.
+					{isQuickSaleMesa
+						? 'Indica el número o nombre de mesa para que cocina identifique el pedido.'
+						: 'Busca un cliente registrado o completa sus datos de contacto.'}
                 </p>
 
                 <div className="grid gap-3">
                     <div className={cn(fieldLabelClass, 'manual-order-client-search')}>
-                        <label htmlFor="manual-order-client-name">Nombre completo{requiredMark(customerRequirements.name)}</label>
+                        <label htmlFor="manual-order-client-name">
+							{isQuickSaleMesa
+								? <>Nº mesa o referencia{requiredMark(true)}</>
+								: <>Nombre completo{requiredMark(customerRequirements.name)}</>}
+						</label>
                         <div className="relative z-10 w-full" ref={clientSearchRef}>
                             <input
                                 id="manual-order-client-name"
                                 type="text"
-                                placeholder="Buscar o escribir nombre"
+                                placeholder={isQuickSaleMesa ? 'Ej. 3 o Mesa 2' : 'Buscar o escribir nombre'}
                                 className={inputClass}
                                 value={manualOrder.client_name}
                                 onChange={(e) => handleClientNameChange(e.target.value)}
-                                onFocus={() => setClientSuggestionsOpen(true)}
-								onKeyDown={handleClientComboboxKeyDown}
+                                onFocus={() => {
+									if (!isQuickSaleMesa) setClientSuggestionsOpen(true);
+								}}
+								onKeyDown={isQuickSaleMesa ? undefined : handleClientComboboxKeyDown}
                                 autoComplete="off"
-								role="combobox"
-								aria-autocomplete="list"
-                                aria-label="Nombre completo del cliente"
-                                aria-expanded={showClientSuggestions}
-                                aria-controls="manual-order-client-suggestions"
-								aria-activedescendant={activeSuggestionIndex >= 0 ? `manual-order-client-suggestions-option-${activeSuggestionIndex}` : undefined}
+								role={isQuickSaleMesa ? undefined : 'combobox'}
+								aria-autocomplete={isQuickSaleMesa ? undefined : 'list'}
+                                aria-label={isQuickSaleMesa ? 'Número o referencia de mesa' : 'Nombre completo del cliente'}
+                                aria-expanded={isQuickSaleMesa ? undefined : showClientSuggestions}
+                                aria-controls={isQuickSaleMesa ? undefined : 'manual-order-client-suggestions'}
+								aria-activedescendant={
+									isQuickSaleMesa || activeSuggestionIndex < 0
+										? undefined
+										: `manual-order-client-suggestions-option-${activeSuggestionIndex}`
+								}
                                 style={{
                                     paddingRight: manualOrder.client_name.length >= 2 ? '40px' : undefined,
                                 }}
                             />
                             {manualOrder.client_name.length >= 2 && validationIcon}
-                            {clientSuggestionsList('manual-order-client-suggestions')}
+                            {!isQuickSaleMesa ? clientSuggestionsList('manual-order-client-suggestions') : null}
                         </div>
                     </div>
 
-                    <label className={fieldLabelClass}>
-                        <span>{formStrategy.idName}{requiredMark(customerRequirements.document)}</span>
-                        <div className="relative w-full">
-                            <input
-                                type="text"
-                                placeholder={`Ingresa ${formStrategy.idName}`}
-                                className={inputClass}
-                                value={manualOrder.client_rut}
-                                onChange={handleRutChange}
-                                style={{
-									...(manualOrder.client_rut ? getInputStyle(rutValid) : {}),
-									paddingRight: manualOrder.client_rut && rutValid ? '40px' : undefined,
-                                }}
-                            />
-							{manualOrder.client_rut && rutValid ? validationIcon : null}
-                        </div>
-                    </label>
+					{!isQuickSaleMesa ? (
+						<>
+					<div className="grid gap-2">
+						<FieldIncludeSwitch
+							id="manual-order-include-document"
+							label={formStrategy.idName}
+							checked={showDocumentField}
+							onCheckedChange={setIncludeDocument}
+							required={customerRequirements.document}
+						/>
+						{showDocumentField ? (
+							<div className="relative w-full">
+								<input
+									type="text"
+									placeholder={`Ingresa ${formStrategy.idName}`}
+									className={inputClass}
+									value={manualOrder.client_rut}
+									onChange={handleRutChange}
+									style={{
+										...(manualOrder.client_rut ? getInputStyle(rutValid) : {}),
+										paddingRight: manualOrder.client_rut && rutValid ? '40px' : undefined,
+									}}
+								/>
+								{manualOrder.client_rut && rutValid ? validationIcon : null}
+							</div>
+						) : null}
+					</div>
 
-                    <label className={fieldLabelClass}>
-                        <span>Teléfono{requiredMark(customerRequirements.phone)}</span>
-                        <div className="relative w-full">
-                            <input
-                                type="tel"
-                                placeholder={`${formStrategy.phonePrefix}…`}
-                                className={inputClass}
-                                value={manualOrder.client_phone}
-                                onChange={handlePhoneChange}
-                                style={{
-									...(phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix)
-										? getInputStyle(phoneValid)
-										: {}),
-									paddingRight:
-										phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix) && phoneValid
-											? '40px'
-											: undefined,
-                                }}
-                            />
-							{phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix) && phoneValid
-								? validationIcon
-								: null}
-                        </div>
-                    </label>
+					<div className="grid gap-2">
+						<FieldIncludeSwitch
+							id="manual-order-include-phone"
+							label="Teléfono"
+							checked={showPhoneField}
+							onCheckedChange={setIncludePhone}
+							locked={phoneLockedOn}
+							required={customerRequirements.phone || phoneLockedOn}
+						/>
+						{showPhoneField ? (
+							<div className="relative w-full">
+								<input
+									type="tel"
+									placeholder={`${formStrategy.phonePrefix}…`}
+									className={inputClass}
+									value={manualOrder.client_phone}
+									onChange={handlePhoneChange}
+									style={{
+										...(phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix)
+											? getInputStyle(phoneValid)
+											: {}),
+										paddingRight:
+											phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix) && phoneValid
+												? '40px'
+												: undefined,
+									}}
+								/>
+								{phoneHasMeaningfulDigits(manualOrder.client_phone, formStrategy.phonePrefix) && phoneValid
+									? validationIcon
+									: null}
+							</div>
+						) : null}
+					</div>
+						</>
+					) : null}
                     </div>
                 </div>
 
                 <div className={sectionCardClass}>
-                    <SectionHeader icon={Truck} tone="accent">Retiro o delivery</SectionHeader>
+                    <SectionHeader icon={Truck} tone="accent">Tipo de entrega</SectionHeader>
                     <p className={`mb-3 ${textScale.micro} leading-relaxed text-gc-text-muted`}>
                         Elige cómo recibirá el cliente este pedido.
                     </p>
 
-                    <div className={`grid grid-cols-1 ${spacing.normal} min-[400px]:grid-cols-2`}>
-						{settingsFulfillments.pickup !== false ? <Button variant="outline"
-                            type="button"
-                            className={cn('manual-order-toggle', toggleBaseClass, isPickup && selectedToggleActiveClass)}
-                            onClick={() => handleOrderTypeChange('pickup')}
-                        >
-                            <Store size={16} />
-                            Local / Retiro
-						</Button> : null}
-						{settingsFulfillments.delivery !== false ? <Button variant="outline"
-                            type="button"
-                            className={cn('manual-order-toggle', toggleBaseClass, isDelivery && selectedToggleActiveClass)}
-                            onClick={() => handleOrderTypeChange('delivery')}
-                        >
-                            <Truck size={16} />
-                            Delivery
-						</Button> : null}
+					{(() => {
+						const visibleModes = [
+							resolvedLocalChannels.mesa ? 'mesa' : null,
+							resolvedLocalChannels.retiro ? 'retiro' : null,
+							resolvedLocalChannels.delivery ? 'delivery' : null,
+						].filter(Boolean);
+						const isMesa = localFulfillmentMode === 'mesa';
+						const isRetiro = localFulfillmentMode === 'retiro';
+						return (
+							<>
+                    <div className={cn(
+						`grid ${spacing.normal}`,
+						visibleModes.length <= 1
+							? 'grid-cols-1'
+							: visibleModes.length === 2
+								? 'grid-cols-1 min-[400px]:grid-cols-2'
+								: 'grid-cols-1 min-[400px]:grid-cols-3',
+					)}>
+						{resolvedLocalChannels.mesa ? (
+							<Button variant="outline"
+								type="button"
+								className={cn(
+									'manual-order-toggle',
+									toggleBaseClass,
+									isMesa ? fulfillmentActiveClass.mesa : null,
+								)}
+								onClick={() => updateLocalFulfillmentMode?.('mesa')}
+							>
+								<TableRestaurantIcon size={18} />
+								Mesa
+							</Button>
+						) : null}
+						{resolvedLocalChannels.retiro ? (
+							<Button variant="outline"
+								type="button"
+								className={cn(
+									'manual-order-toggle',
+									toggleBaseClass,
+									isRetiro ? fulfillmentActiveClass.retiro : null,
+								)}
+								onClick={() => (
+									localFulfillmentMode === 'mesa'
+										? updateLocalFulfillmentMode?.('retiro')
+										: handleOrderTypeChange('pickup')
+								)}
+							>
+								<Store size={16} />
+								Local / Retiro
+							</Button>
+						) : null}
+						{resolvedLocalChannels.delivery ? (
+							<Button variant="outline"
+								type="button"
+								className={cn(
+									'manual-order-toggle',
+									toggleBaseClass,
+									isDelivery ? fulfillmentActiveClass.delivery : null,
+								)}
+								onClick={() => (
+									localFulfillmentMode === 'mesa'
+										? updateLocalFulfillmentMode?.('delivery')
+										: handleOrderTypeChange('delivery')
+								)}
+							>
+								<Truck size={16} />
+								Delivery
+							</Button>
+						) : null}
                     </div>
 
                     <div className="mt-auto pt-1">
+					{isMesa ? (
+						<p className={hintClass}>
+							Para que cocina identifique el pedido en salón. El cobro se registra al cerrar.
+						</p>
+					) : (
+						<>
                     {deliveryFields}
 
 					{showQuickSalePaymentChoice ? (
@@ -1250,7 +1398,12 @@ const ClientForm = ({
 							)}
 						</div>
 					) : null}
+						</>
+					)}
                     </div>
+							</>
+						);
+					})()}
                 </div>
             </div>
         </div>

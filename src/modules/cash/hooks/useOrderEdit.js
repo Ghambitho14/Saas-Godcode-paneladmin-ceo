@@ -34,8 +34,10 @@ import {
 	deriveLocalFulfillmentFromOrder,
 	deriveMesaPartyModeFromOrder,
 	getLocalFulfillmentMode,
+	isBlankClientDocument,
 	isOpenMesaMeseroMode,
 	normalizeManualOrderType,
+	phoneHasMeaningfulDigits,
 	resolveOpenMesaClientName,
 	buildManualDeliveryPayload,
 	sanitizeManualOrderInput,
@@ -125,9 +127,10 @@ function buildInitialState(initialOrder, currency = 'CLP', fractionDigits = isoF
 		? normalizePaymentBreakdown(initialOrder.payment_breakdown)
 		: null;
 
+	const rawRut = String(initialOrder.client_rut ?? '');
 	return {
 		client_name: String(localFulfillmentMode === 'mesa' ? (initialOrder.operator_reference ?? initialOrder.client_name ?? '') : (initialOrder.client_name ?? '')),
-		client_rut: String(initialOrder.client_rut ?? ''),
+		client_rut: isBlankClientDocument(rawRut) ? '' : rawRut,
 		client_phone: String(initialOrder.client_phone ?? ''),
 		items,
 		total: computedTotal,
@@ -171,7 +174,17 @@ export const useOrderEdit = (
 		[initialOrder, currency, fractionDigits],
 	);
 
-	const [manualOrder, setManualOrder] = useState(() => initialState);
+	const initialIncludeDocument = !isBlankClientDocument(initialState.client_rut);
+	const initialIncludePhone =
+		initialState.order_type === 'delivery'
+		|| initialState.local_fulfillment_mode === 'delivery'
+		|| phoneHasMeaningfulDigits(initialState.client_phone, strategy.phonePrefix);
+
+	const [manualOrder, setManualOrder] = useState(() => ({
+		...initialState,
+		client_rut: initialIncludeDocument ? initialState.client_rut : '',
+		client_phone: initialIncludePhone ? initialState.client_phone : '',
+	}));
 	const [loading, setLoading] = useState(false);
 	const [couponPreview, setCouponPreview] = useState(() => ({
 		loading: false,
@@ -180,12 +193,44 @@ export const useOrderEdit = (
 		variant: 'neutral',
 	}));
 
-	const [rutValid, setRutValid] = useState(() =>
-		strategy.validateId(String(initialOrder?.client_rut ?? '')),
-	);
-	const [phoneValid, setPhoneValid] = useState(() => {
-		return strategy.validatePhone(String(initialOrder?.client_phone ?? ''));
+	const [rutValid, setRutValid] = useState(() => {
+		if (!initialIncludeDocument) return true;
+		const rut = String(initialState.client_rut ?? '');
+		return isBlankClientDocument(rut) || strategy.validateId(rut);
 	});
+	const [phoneValid, setPhoneValid] = useState(() => {
+		if (!initialIncludePhone) return true;
+		const phone = String(initialState.client_phone ?? '');
+		if (!phoneHasMeaningfulDigits(phone, strategy.phonePrefix)) return true;
+		return strategy.validatePhone(phone);
+	});
+	const [includeDocument, setIncludeDocumentState] = useState(() => initialIncludeDocument);
+	const [includePhone, setIncludePhoneState] = useState(() => initialIncludePhone);
+
+	const setIncludeDocument = useCallback((enabled) => {
+		const next = Boolean(enabled);
+		setIncludeDocumentState(next);
+		if (!next) {
+			setManualOrder((prev) => ({ ...prev, client_rut: '' }));
+			setRutValid(true);
+		}
+	}, []);
+
+	const setIncludePhone = useCallback((enabled) => {
+		const next = Boolean(enabled);
+		setIncludePhoneState(next);
+		if (!next) {
+			setManualOrder((prev) => ({ ...prev, client_phone: '' }));
+			setPhoneValid(true);
+		} else {
+			setManualOrder((prev) => {
+				const current = String(prev.client_phone ?? '').trim();
+				if (current) return prev;
+				return { ...prev, client_phone: strategy.phonePrefix };
+			});
+			setPhoneValid(true);
+		}
+	}, [strategy.phonePrefix]);
 
 	const [receiptFile, setReceiptFile] = useState(null);
 	const [receiptPreview, setReceiptPreview] = useState(null);
@@ -246,6 +291,11 @@ export const useOrderEdit = (
 			selected_client_id: clientId,
 		}));
 
+		if (rut) setIncludeDocumentState(true);
+		if (phone && phoneHasMeaningfulDigits(phone, strategy.phonePrefix)) {
+			setIncludePhoneState(true);
+		}
+
 		setRutValid(rut ? strategy.validateId(rut) : false);
 		setPhoneValid(strategy.validatePhone(phone));
 	}, [strategy, countryProfile.countryCode]);
@@ -261,7 +311,8 @@ export const useOrderEdit = (
 	const updateCouponCode = (val) =>
 		setManualOrder((prev) => ({ ...prev, coupon_code: typeof val === 'string' ? val : '' }));
 	const updateNote = (val) => setManualOrder((prev) => ({ ...prev, note: val }));
-	const updateOrderType = (val) =>
+	const updateOrderType = (val) => {
+		if (val === 'delivery') setIncludePhone(true);
 		setManualOrder((prev) => {
 			if (val === 'pickup') {
 				return {
@@ -282,8 +333,11 @@ export const useOrderEdit = (
 				...(val === 'delivery' ? { local_fulfillment_mode: 'delivery' } : {}),
 			};
 		});
-	const updateLocalFulfillmentMode = (mode, cfg = null, subtotal = 0) =>
-		setManualOrder((prev) => applyLocalFulfillmentMode(prev, mode, cfg, subtotal));
+	};
+	const updateLocalFulfillmentMode = (mode) => {
+		if (mode === 'delivery') setIncludePhone(true);
+		setManualOrder((prev) => applyLocalFulfillmentMode(prev, mode, { preserveClient: true }));
+	};
 	const updateMesaPartyMode = (mode) =>
 		setManualOrder((prev) => applyMesaPartyMode(prev, mode));
 	const updateDeliveryAddress = (val) =>
@@ -490,14 +544,31 @@ export const useOrderEdit = (
 
 	/** No reseteamos a defaults: el modal de edicion no se reusa con otro pedido. */
 	const resetOrder = useCallback(() => {
-		setManualOrder(initialState);
+		const rut = String(initialState.client_rut ?? '');
+		const phone = String(initialState.client_phone ?? '');
+		const nextIncludeDocument = !isBlankClientDocument(rut);
+		const nextIncludePhone =
+			initialState.order_type === 'delivery'
+			|| initialState.local_fulfillment_mode === 'delivery'
+			|| phoneHasMeaningfulDigits(phone, strategy.phonePrefix);
+		setManualOrder({
+			...initialState,
+			client_rut: nextIncludeDocument ? rut : '',
+			client_phone: nextIncludePhone ? phone : '',
+		});
 		setReceiptFile(null);
 		setReceiptPreview((prev) => {
 			if (prev) URL.revokeObjectURL(prev);
 			return null;
 		});
-		setRutValid(strategy.validateId(initialState.client_rut));
-		setPhoneValid(normalizeInternationalPhone(initialState.client_phone, countryProfile.countryCode).valid);
+		setRutValid(!nextIncludeDocument || isBlankClientDocument(rut) || strategy.validateId(rut));
+		setPhoneValid(
+			!nextIncludePhone
+			|| !phoneHasMeaningfulDigits(phone, strategy.phonePrefix)
+			|| normalizeInternationalPhone(phone, countryProfile.countryCode).valid,
+		);
+		setIncludeDocumentState(nextIncludeDocument);
+		setIncludePhoneState(nextIncludePhone);
 	}, [initialState, strategy, countryProfile.countryCode]);
 
 	useEffect(() => {
@@ -598,13 +669,28 @@ export const useOrderEdit = (
 				return;
 			}
 		}
-		const phoneRaw = String(manualOrder.client_phone || '').trim();
-		if (phoneRaw && !normalizeInternationalPhone(phoneRaw, countryProfile.countryCode).valid) {
+		const phoneRequired =
+			includePhone
+			|| manualOrder.order_type === 'delivery'
+			|| getLocalFulfillmentMode(manualOrder) === 'delivery';
+		const phoneRaw = phoneRequired ? String(manualOrder.client_phone || '').trim() : '';
+		if (
+			phoneRaw
+			&& phoneHasMeaningfulDigits(phoneRaw, strategy.phonePrefix)
+			&& !normalizeInternationalPhone(phoneRaw, countryProfile.countryCode).valid
+		) {
 			showNotify?.(`Teléfono inválido. Usa formato internacional ${countryProfile.phonePrefix}… o déjalo vacío si es opcional.`, 'error');
 			return;
 		}
-		const rutRaw = String(manualOrder.client_rut || '').trim();
-		if (rutRaw && !strategy.validateId(rutRaw)) {
+		if (phoneRequired && !phoneHasMeaningfulDigits(phoneRaw, strategy.phonePrefix)) {
+			// Delivery (y switch ON) exigen teléfono real; mesa/retiro con switch OFF ya limpiaron.
+			if (manualOrder.order_type === 'delivery' || getLocalFulfillmentMode(manualOrder) === 'delivery') {
+				showNotify?.(`Ingresa un teléfono válido con formato ${countryProfile.phonePrefix}…`, 'error');
+				return;
+			}
+		}
+		const rutRaw = includeDocument ? String(manualOrder.client_rut || '').trim() : '';
+		if (rutRaw && !isBlankClientDocument(rutRaw) && !strategy.validateId(rutRaw)) {
 			showNotify?.(`El ${strategy.idName} ingresado no es válido. Borralo o corrigelo.`, 'error');
 			return;
 		}
@@ -666,18 +752,22 @@ export const useOrderEdit = (
 				: null;
 
 			const deliveryPayload = buildManualDeliveryPayload(manualOrder, branchDeliveryCfg);
+			const resolvedPhone = (() => {
+				if (isLocalSession && openMesaMesero) return OPEN_MESA_CAJA_DEFAULTS.client_phone;
+				if (!phoneRequired) return '';
+				const raw = sanitizeManualOrderInput(manualOrder.client_phone);
+				if (!phoneHasMeaningfulDigits(raw, strategy.phonePrefix)) return '';
+				return normalizeInternationalPhone(raw, countryProfile.countryCode).e164 || raw;
+			})();
+			const resolvedRut = (() => {
+				if (isLocalSession && openMesaMesero) return OPEN_MESA_CAJA_DEFAULTS.client_rut;
+				if (!includeDocument || isBlankClientDocument(manualOrder.client_rut)) return '';
+				return sanitizeManualOrderInput(manualOrder.client_rut);
+			})();
 			const sanitizedPatch = {
 				client_name: clientName,
-				client_phone: isLocalSession
-					? (openMesaMesero
-						? OPEN_MESA_CAJA_DEFAULTS.client_phone
-						: (normalizeInternationalPhone(sanitizeManualOrderInput(manualOrder.client_phone), countryProfile.countryCode).e164 || sanitizeManualOrderInput(manualOrder.client_phone)))
-					: (normalizeInternationalPhone(sanitizeManualOrderInput(manualOrder.client_phone), countryProfile.countryCode).e164 || sanitizeManualOrderInput(manualOrder.client_phone)),
-				client_rut: isLocalSession
-					? (openMesaMesero
-						? OPEN_MESA_CAJA_DEFAULTS.client_rut
-						: sanitizeManualOrderInput(manualOrder.client_rut))
-					: sanitizeManualOrderInput(manualOrder.client_rut),
+				client_phone: resolvedPhone,
+				client_rut: resolvedRut,
 				note: sanitizeManualOrderInput(manualOrder.note),
 				order_type: manualOrder.order_type,
 				local_fulfillment_mode: getLocalFulfillmentMode(manualOrder),
@@ -875,6 +965,10 @@ export const useOrderEdit = (
 		loading,
 		rutValid,
 		phoneValid,
+		includeDocument,
+		includePhone,
+		setIncludeDocument,
+		setIncludePhone,
 		receiptFile,
 		receiptPreview,
 		updateClientName,

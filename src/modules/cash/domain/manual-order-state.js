@@ -46,7 +46,7 @@ export function manualOrderReducer(state, action) {
 			const mode = action.mode === 'session' ? 'session' : 'quick_sale';
 			return dirty(state, {
 				mode,
-				fulfillment: mode === 'session' ? 'table' : (state.fulfillment === 'table' ? 'pickup' : state.fulfillment),
+				fulfillment: mode === 'session' ? 'table' : state.fulfillment,
 				paymentTiming: 'deferred',
 				quote: null,
 				paymentLines: [],

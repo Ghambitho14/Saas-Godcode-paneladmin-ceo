@@ -164,6 +164,7 @@ export const AdminPage = ({ companyName, logoUrl, userEmail: initialEmail, prima
 
   const handleManualOrderSaved = React.useCallback(async (savedOrder) => {
     upsertOrder(savedOrder);
+    void refreshClients();
     if (pendingSeatReservation?.id && savedOrder?.id) {
       try {
         const { tableReservationsService } = await import('../../services/tableReservationsService');
@@ -178,7 +179,7 @@ export const AdminPage = ({ companyName, logoUrl, userEmail: initialEmail, prima
     // Pedido, inventario, pago y caja ya fueron confirmados por la misma RPC.
     void cashSystem?.refresh?.();
     return true;
-  }, [cashSystem, upsertOrder, pendingSeatReservation, setPendingSeatReservation, showNotify]);
+  }, [cashSystem, upsertOrder, refreshClients, pendingSeatReservation, setPendingSeatReservation, showNotify]);
 
   React.useEffect(() => {
     if (!selectedClient) setClientOrderDetail(null);

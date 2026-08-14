@@ -8,7 +8,9 @@ export const CASH_SHIFT_META_SELECT =
 export const CASH_SHIFT_ACTIVE_SELECT = `${CASH_SHIFT_META_SELECT}, cash_movements(count)`;
 
 export const CASH_SHIFT_PAST_SELECT =
-	`${CASH_SHIFT_META_SELECT}, cash_movements(amount, type, payment_method), orders(count)`;
+	`${CASH_SHIFT_META_SELECT}, ` +
+	'cash_movements(amount, type, payment_method, description, expense_kind, order_id, orders(delivery_fee)), ' +
+	'orders(count)';
 
 export const CASH_MOVEMENTS_SELECT =
 	'id, shift_id, type, amount, amount_minor, currency, created_at, description, payment_method, order_id, expense_kind';
