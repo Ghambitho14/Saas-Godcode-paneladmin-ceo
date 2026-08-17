@@ -25,6 +25,7 @@ import { queuePaymentEvidence, uploadQueuedPaymentEvidence } from '../services/p
 import { supabase, TABLES } from '@/integrations/supabase';
 import { buildCouponPreview } from '@/lib/discount-coupon';
 import { canOverrideDeliveryFee } from '../utils/deliveryFeePermissions';
+import { deliveryFieldsFromClientRecord, maybeSaveClientDefaultDeliveryAddress } from '../services/clientService';
 import {
 	COUPON_PREVIEW_ERR_MSG,
 	getEffectiveItemPrice,
@@ -282,6 +283,7 @@ export const useOrderEdit = (
 		const normalizedPhone = normalizeInternationalPhone(client.phone, countryProfile.countryCode);
 		const phone = normalizedPhone.valid ? normalizedPhone.e164 : String(client.phone ?? '').trim();
 		const clientId = client.id != null ? String(client.id) : '';
+		const deliveryFields = deliveryFieldsFromClientRecord(client);
 
 		setManualOrder((prev) => ({
 			...prev,
@@ -289,6 +291,7 @@ export const useOrderEdit = (
 			client_rut: rut || prev.client_rut,
 			client_phone: phone || prev.client_phone,
 			selected_client_id: clientId,
+			...(deliveryFields ?? {}),
 		}));
 
 		if (rut) setIncludeDocumentState(true);
@@ -922,8 +925,42 @@ export const useOrderEdit = (
 				}
 			}
 
+			let addressSaveFailed = false;
+			if (manualOrder.order_type === 'delivery') {
+				const clientId = String(
+					manualOrder.selected_client_id || initialOrder.client_id || '',
+				).trim();
+				const addressSave = await maybeSaveClientDefaultDeliveryAddress({
+					orderType: 'delivery',
+					clientId,
+					companyId: branch.company_id,
+					address: manualOrder.delivery_address,
+					reference: manualOrder.delivery_reference,
+				});
+				addressSaveFailed = Boolean(addressSave && addressSave.ok === false);
+			}
+
 			if (!cashSynced) {
-				showNotify?.(evidencePending ? 'Pedido actualizado · comprobante pendiente.' : 'Pedido actualizado.', evidencePending ? 'warning' : 'success');
+				if (evidencePending && addressSaveFailed) {
+					showNotify?.(
+						'Pedido actualizado · comprobante pendiente. No se pudo guardar la dirección del cliente.',
+						'warning',
+					);
+				} else if (evidencePending) {
+					showNotify?.('Pedido actualizado · comprobante pendiente.', 'warning');
+				} else if (addressSaveFailed) {
+					showNotify?.(
+						'Pedido actualizado. No se pudo guardar la dirección del cliente.',
+						'warning',
+					);
+				} else {
+					showNotify?.('Pedido actualizado.', 'success');
+				}
+			} else if (addressSaveFailed) {
+				showNotify?.(
+					'Pedido y caja actualizados. No se pudo guardar la dirección del cliente.',
+					'warning',
+				);
 			}
 			if (onSaved) onSaved(updated);
 			if (onClose) onClose();

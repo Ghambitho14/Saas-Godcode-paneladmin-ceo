@@ -1,4 +1,8 @@
+import { supabase, TABLES } from '@/integrations/supabase';
 import { normalizePhoneDigits } from '@/shared/utils/phoneWhatsApp';
+
+const MAX_ADDRESS_LENGTH = 500;
+const MAX_REFERENCE_LENGTH = 300;
 
 /**
  * Normaliza teléfono chileno al formato canónico del panel: +56 9 XXXX XXXX
@@ -65,4 +69,109 @@ export function filterClientsByNameOrPhone(clients, query, options = {}) {
 			return nameMatch || rutMatch || phoneMatch;
 		})
 		.slice(0, limit);
+}
+
+/**
+ * Normaliza el JSON de dirección principal del cliente.
+ * Solo conserva `address` y `reference` (zona/km/fee no se persisten).
+ * @param {unknown} value
+ * @returns {{ address: string, reference: string } | null}
+ */
+export function normalizeClientDefaultDeliveryAddress(value) {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+	const address = String(value.address ?? '').replace(/<[^>]*>/g, '').trim().slice(0, MAX_ADDRESS_LENGTH);
+	const reference = String(value.reference ?? '').replace(/<[^>]*>/g, '').trim().slice(0, MAX_REFERENCE_LENGTH);
+	if (!address && !reference) return null;
+	return { address, reference };
+}
+
+/**
+ * @param {{ address?: unknown, reference?: unknown }} [fields]
+ * @returns {{ address: string, reference: string } | null}
+ */
+export function buildClientDefaultDeliveryAddress(fields = {}) {
+	return normalizeClientDefaultDeliveryAddress(fields);
+}
+
+/**
+ * Campos de formulario a aplicar al seleccionar un cliente con dirección guardada.
+ * Limpia zona/km/fee derivados para que la sucursal activa los recalcule.
+ * @param {unknown} client
+ * @returns {{ delivery_address: string, delivery_reference: string, delivery_named_area_id: string, delivery_km: string, delivery_fee: number } | null}
+ */
+export function deliveryFieldsFromClientRecord(client) {
+	const saved = normalizeClientDefaultDeliveryAddress(client?.default_delivery_address);
+	if (!saved) return null;
+	return {
+		delivery_address: saved.address,
+		delivery_reference: saved.reference,
+		delivery_named_area_id: '',
+		delivery_km: '',
+		delivery_fee: 0,
+	};
+}
+
+/**
+ * Actualiza la dirección principal del cliente (tenant-safe: id + company_id).
+ * @param {{ clientId: unknown, companyId: unknown, address?: unknown, reference?: unknown }} params
+ * @returns {Promise<{ ok: true, data: object } | { ok: false, error: Error|object }>}
+ */
+export async function updateClientDefaultDeliveryAddress({
+	clientId,
+	companyId,
+	address,
+	reference,
+}) {
+	const clientIdStr = String(clientId ?? '').trim();
+	const companyIdStr = String(companyId ?? '').trim();
+	if (!clientIdStr || !companyIdStr) {
+		return { ok: false, error: new Error('client_id y company_id son obligatorios') };
+	}
+
+	const payload = buildClientDefaultDeliveryAddress({ address, reference });
+	if (!payload) {
+		return { ok: false, error: new Error('Dirección vacía') };
+	}
+
+	const { data, error } = await supabase
+		.from(TABLES.clients)
+		.update({
+			default_delivery_address: payload,
+			updated_at: new Date().toISOString(),
+		})
+		.eq('id', clientIdStr)
+		.eq('company_id', companyIdStr)
+		.select('id, default_delivery_address')
+		.maybeSingle();
+
+	if (error) return { ok: false, error };
+	if (!data) return { ok: false, error: new Error('Cliente no encontrado') };
+	return { ok: true, data };
+}
+
+/**
+ * Persistencia secundaria tras un pedido/edición delivery exitoso.
+ * Solo clientes registrados; no-delivery o sin clientId se omiten sin error.
+ * @param {{ orderType?: unknown, clientId?: unknown, companyId?: unknown, address?: unknown, reference?: unknown }} params
+ * @returns {Promise<{ ok: true, skipped?: boolean, data?: object } | { ok: false, error: Error|object }>}
+ */
+export async function maybeSaveClientDefaultDeliveryAddress({
+	orderType,
+	clientId,
+	companyId,
+	address,
+	reference,
+}) {
+	if (String(orderType ?? '').toLowerCase() !== 'delivery') {
+		return { ok: true, skipped: true };
+	}
+	if (!String(clientId ?? '').trim()) {
+		return { ok: true, skipped: true };
+	}
+	return updateClientDefaultDeliveryAddress({
+		clientId,
+		companyId,
+		address,
+		reference,
+	});
 }

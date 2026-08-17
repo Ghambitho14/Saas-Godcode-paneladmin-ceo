@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { getFormStrategy } from '@/lib/geo/country-forms';
 import { parseLocalOrderChannels } from '@/lib/delivery-settings';
-import { normalizeManualPhone } from '../../services/clientService';
+import { deliveryFieldsFromClientRecord, normalizeManualPhone } from '../../services/clientService';
 import {
     MANUAL_ORDER_INITIAL_FORM_STATE,
     OPEN_MESA_CAJA_DEFAULTS,
@@ -242,6 +242,7 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
         const rut = rutRaw && !isBlankClientDocument(rutRaw) ? strategy.formatId(rutRaw) : '';
         const phone = normalizeManualPhone(client.phone) || strategy.phonePrefix;
         const clientId = client.id != null ? String(client.id) : '';
+        const deliveryFields = deliveryFieldsFromClientRecord(client);
 
         setForm((prev) => ({
             ...prev,
@@ -249,6 +250,7 @@ export const useManualOrderForm = (enabledLocalChannels = null, formCountry = 'C
             client_rut: rut || prev.client_rut,
             client_phone: phone || prev.client_phone,
             selected_client_id: clientId,
+            ...(deliveryFields ?? {}),
         }));
 
         if (rut) setIncludeDocumentState(true);

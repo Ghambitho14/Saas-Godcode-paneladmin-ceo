@@ -12,7 +12,7 @@ export const PRODUCT_BRANCH_SELECT =
 	'id, product_id, is_active, is_special, category_id, inventory_pause_reason, inventory_paused_at';
 
 export const CLIENTS_PANEL_SELECT =
-	'id, name, phone, phone_normalized, rut, total_orders, total_spent, is_frequent, first_order_at, last_order_at, created_at, updated_at, company_id';
+	'id, name, phone, phone_normalized, rut, total_orders, total_spent, is_frequent, first_order_at, last_order_at, created_at, updated_at, company_id, default_delivery_address';
 
 export const COMPANY_ADMIN_SELECT = 'id, name, legal_rut, address, phone, email';
 

@@ -16,6 +16,7 @@ import { normalizeManualOrderSettings, requirementsFor } from '../domain/manual-
 import { normalizePaymentMethods, validatePaymentLines } from '../domain/payment-methods';
 import { manualOrderV2Service, isManualOrderV2Enabled } from '../services/manualOrderV2Service';
 import { queuePaymentEvidence, uploadQueuedPaymentEvidence } from '../services/paymentEvidenceOutbox';
+import { maybeSaveClientDefaultDeliveryAddress } from '../services/clientService';
 import { createClientUuid } from '@/shared/utils/supabaseStorage';
 import {
 	sanitizeManualOrderInput,
@@ -477,16 +478,32 @@ export const useManualOrder = (
 			}
 
 			const notifyMode = toV2Mode(openMesaMode, fulfillment);
+			let addressSaveFailed = false;
+			if (fulfillment === 'delivery') {
+				const addressSave = await maybeSaveClientDefaultDeliveryAddress({
+					orderType: 'delivery',
+					clientId: String(form.selected_client_id ?? '').trim(),
+					companyId: branch.company_id,
+					address: form.delivery_address,
+					reference: form.delivery_reference,
+				});
+				addressSaveFailed = Boolean(addressSave && addressSave.ok === false);
+			}
+
+			const baseSuccessMessage = evidencePending
+				? 'Pedido creado · comprobante pendiente. Puedes reintentar desde el pedido.'
+				: notifyMode === 'session'
+					? ({ mesa: 'Mesa abierta', retiro: 'Retiro abierto', delivery: 'Delivery abierto' }[getLocalFulfillmentMode(form)] ?? 'Sesión abierta')
+					: (!openMesaMode && hasManualOrderPaymentIntent({ ...form, receiptFile, v2Enabled }))
+						|| (openMesaMode && form.charge_now)
+						? 'Pedido cobrado y creado'
+						: 'Pedido creado pendiente de pago';
+			const successMessage = addressSaveFailed
+				? `${baseSuccessMessage} · No se pudo guardar la dirección del cliente.`
+				: baseSuccessMessage;
 			showNotify?.(
-				evidencePending
-					? 'Pedido creado · comprobante pendiente. Puedes reintentar desde el pedido.'
-					: notifyMode === 'session'
-						? ({ mesa: 'Mesa abierta', retiro: 'Retiro abierto', delivery: 'Delivery abierto' }[getLocalFulfillmentMode(form)] ?? 'Sesión abierta')
-						: (!openMesaMode && hasManualOrderPaymentIntent({ ...form, receiptFile, v2Enabled }))
-							|| (openMesaMode && form.charge_now)
-							? 'Pedido cobrado y creado'
-							: 'Pedido creado pendiente de pago',
-				evidencePending ? 'warning' : 'success',
+				successMessage,
+				evidencePending || addressSaveFailed ? 'warning' : 'success',
 			);
 			if (v2Enabled && evidencePending) {
 				void manualOrderV2Service.recordMetric({ branchId: branch.id, eventName: 'evidence_pending', mode: notifyMode, fulfillment });
