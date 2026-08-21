@@ -1652,7 +1652,7 @@ const AdminAnalytics = ({ orders, clients, branches, showNotify, companyId, sele
 
     if (view === 'expensesOnly') {
         return (
-        <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col gap-6 bg-[#f5f5f7] p-4 sm:p-6 animate-fade">
+            <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col gap-6 p-4 sm:p-6 animate-fade">
                 {gastosLocalSection}
                 {monthlyExportBlock}
                 <LocalExpenseModal
@@ -1680,7 +1680,7 @@ const AdminAnalytics = ({ orders, clients, branches, showNotify, companyId, sele
     }
 
     return (
-        <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col gap-6 bg-[#f5f5f7] p-4 sm:p-6 animate-fade">
+        <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col gap-6 p-4 sm:p-6 animate-fade">
             {reportPeriodHeader}
 
             {multiCurrencyWarning ? (

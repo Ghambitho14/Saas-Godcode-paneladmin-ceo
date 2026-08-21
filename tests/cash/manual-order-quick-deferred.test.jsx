@@ -4,7 +4,7 @@ import { normalizeManualOrderSettings } from '@/modules/cash/domain/manual-order
 
 function checkoutFlowFor(paymentLines = []) {
     const paymentMethods = [{
-        id: 'cash',
+        id: 'efectivo',
         label: 'Efectivo USD',
         rail: 'cash',
         currency: 'USD',
@@ -62,7 +62,7 @@ describe('venta rápida con pago diferido', () => {
     it('exige un pago exacto cuando el operador agrega un método', () => {
         expect(checkoutFlowFor([{
             id: 'line-1',
-            methodId: 'cash',
+            methodId: 'efectivo',
             rail: 'cash',
             amountMinor: 500,
             currency: 'USD',
@@ -74,7 +74,7 @@ describe('venta rápida con pago diferido', () => {
     it('acepta y detecta un método que cubre exactamente el total', () => {
         expect(checkoutFlowFor([{
             id: 'line-1',
-            methodId: 'cash',
+            methodId: 'efectivo',
             rail: 'cash',
             amountMinor: 1000,
             currency: 'USD',

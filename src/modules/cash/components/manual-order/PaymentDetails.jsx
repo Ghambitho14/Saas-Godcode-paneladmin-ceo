@@ -158,6 +158,11 @@ function PaymentLinesEditor({ manualOrder, updatePaymentLines, branchDeliveryCfg
 
     return (
         <div className="space-y-3">
+			{methods.length === 0 ? (
+				<div className="rounded-[12px] border border-gc-warning/40 bg-gc-warning/10 p-3 text-sm text-gc-text" role="alert">
+					No hay métodos de pago habilitados para esta sucursal. Configúralos desde el SaaS antes de registrar el cobro.
+				</div>
+			) : null}
             <div className={`grid grid-cols-1 ${spacing.compact} sm:grid-cols-2`}>
                 {methods.map((method) => {
                     const active = lines.some((line) => line.methodId === method.id);

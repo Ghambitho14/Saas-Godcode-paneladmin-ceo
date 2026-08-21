@@ -1,8 +1,9 @@
 import { isoFractionDigits, sumMinor } from '@/lib/money/minor-units';
 
 export const PAYMENT_METHOD_REGISTRY = Object.freeze({
-	cash: { id: 'cash', label: 'Efectivo', rail: 'cash', currencyMode: 'accounting', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
-	tienda: { id: 'cash', label: 'Efectivo', rail: 'cash', currencyMode: 'accounting', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
+	efectivo: { id: 'efectivo', label: 'Efectivo', rail: 'cash', currencyMode: 'accounting', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
+	cash: { id: 'efectivo', label: 'Efectivo', rail: 'cash', currencyMode: 'accounting', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
+	tienda: { id: 'efectivo', label: 'Efectivo', rail: 'cash', currencyMode: 'accounting', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
 	cash_usd: { id: 'cash_usd', label: 'Efectivo USD', rail: 'cash', currency: 'USD', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
 	cash_ves: { id: 'cash_ves', label: 'Efectivo VES', rail: 'cash', currency: 'VES', evidencePolicy: 'none', settlementTrigger: 'cash_confirmation' },
 	card: { id: 'card', label: 'Tarjeta', rail: 'card', currencyMode: 'accounting', evidencePolicy: 'optional', settlementTrigger: 'pos_confirmation' },
@@ -45,13 +46,22 @@ function normalizeRawDefinition(raw, accountingCurrency) {
 export function normalizePaymentMethods(rawMethods, options = {}) {
 	const accountingCurrency = String(options.accountingCurrency ?? '').trim().toUpperCase();
 	if (!accountingCurrency) throw new Error('Moneda contable requerida.');
-	const source = Array.isArray(rawMethods) && rawMethods.length ? rawMethods : ['cash', 'card', 'bank_transfer'];
+	const source = Array.isArray(rawMethods) && rawMethods.length ? rawMethods : ['efectivo', 'card', 'bank_transfer'];
 	const seen = new Set();
 	return source.map((raw) => normalizeRawDefinition(raw, accountingCurrency)).filter((definition) => {
 		if (!definition?.enabled || seen.has(definition.id)) return false;
 		seen.add(definition.id);
 		return true;
 	});
+}
+
+/**
+ * Normaliza la lista autoritativa configurada para una sucursal.
+ * Una lista vacía permanece vacía y no habilita métodos predeterminados.
+ */
+export function normalizeConfiguredPaymentMethods(rawMethods, options = {}) {
+	if (!Array.isArray(rawMethods) || rawMethods.length === 0) return [];
+	return normalizePaymentMethods(rawMethods, options);
 }
 
 function decimalRatio(value) {

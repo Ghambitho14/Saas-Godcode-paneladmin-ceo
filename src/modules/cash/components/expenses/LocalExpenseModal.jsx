@@ -34,7 +34,7 @@ function computeOrderNet(movements) {
 }
 
 const ORDER_REFUND_SELECT =
-    'id, total, status, payment_type, payment_method_specific, payment_breakdown, client_name';
+    'id, branch_id, total, status, payment_type, payment_method_specific, payment_breakdown, client_name';
 
 async function findOrderByQuery({ companyId, branchId, query }) {
     const raw = String(query || '').trim().replace(/^#/, '');
@@ -230,6 +230,15 @@ const LocalExpenseModal = ({
     const handleSubmitRefund = async () => {
         if (submitting || !foundOrder) return;
 
+        if (!branchId || foundOrder.branch_id !== branchId) {
+            setRefundError('El pedido no pertenece a la sucursal seleccionada');
+            return;
+        }
+        if (!activeShift?.id || activeShift.branch_id !== branchId) {
+            setRefundError('No hay caja abierta en esta sucursal');
+            return;
+        }
+
         if (orderNet <= 5) {
             if (showNotify) {
                 showNotify('Este pedido ya no tiene saldo neto en caja para devolver', 'info');
@@ -240,15 +249,29 @@ const LocalExpenseModal = ({
         setSubmitting(true);
         setRefundError('');
         try {
-            const ok = await registerRefund(foundOrder);
-            if (!ok) return;
+            const shouldCancel = foundOrder.status !== 'cancelled'
+                && typeof moveOrder === 'function'
+                && window.confirm(
+                    `¿También cancelar el pedido #${String(foundOrder.id).slice(-4)}?\n\n`
+                    + 'Al aceptar, la cancelación registrará la devolución automáticamente.',
+                );
 
-            const shouldCancel = window.confirm(
-                `Devolución registrada.\n\n¿También cancelar el pedido #${String(foundOrder.id).slice(-4)}?`,
-            );
-            if (shouldCancel && foundOrder.status !== 'cancelled' && typeof moveOrder === 'function') {
-                await moveOrder(foundOrder.id, 'cancelled');
+            if (shouldCancel) {
+                const cancelled = await moveOrder(foundOrder.id, 'cancelled');
+                if (!cancelled) {
+                    setRefundError('No se pudo cancelar ni devolver el pedido');
+                    return;
+                }
+                if (typeof onAfterSuccess === 'function') await onAfterSuccess();
+                onClose();
+                return;
             }
+
+            const ok = await registerRefund(foundOrder, {
+                expectedBranchId: branchId,
+                targetShift: activeShift,
+            });
+            if (!ok) return;
 
             if (typeof onAfterSuccess === 'function') await onAfterSuccess();
             onClose();

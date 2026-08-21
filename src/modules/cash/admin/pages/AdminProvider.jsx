@@ -31,7 +31,7 @@ import { atomicOrderTransactionService } from '../../services/atomicOrderTransac
 import { majorToMinor, minorToMajor } from '@/lib/money/minor-units';
 import { fractionDigitsForCurrency, normalizeCurrencyCode } from '@/shared/utils/money';
 import { createClientUuid } from '@/shared/utils/supabaseStorage';
-import { normalizePaymentMethods, validatePaymentLines } from '../../domain/payment-methods';
+import { normalizeConfiguredPaymentMethods, normalizePaymentMethods, validatePaymentLines } from '../../domain/payment-methods';
 import {
 	extractMenuSettingsFromIntegration,
 	resolvePanelCapabilities,
@@ -60,7 +60,7 @@ function settlementLinesFromLegacyPatch(order, patch) {
 		return [
 			...(cash > 0 ? [{
 				id: createClientUuid(),
-				methodId: 'cash',
+				methodId: 'efectivo',
 				rail: 'cash',
 				amountMinor: cash,
 				currency,
@@ -80,7 +80,7 @@ function settlementLinesFromLegacyPatch(order, patch) {
 		: majorToMinor(patch.cash_tendered, currency, digits);
 	return [{
 		id: createClientUuid(),
-		methodId: rail === 'cash' ? 'cash' : rail === 'card' ? 'card' : 'bank_transfer',
+		methodId: rail === 'cash' ? 'efectivo' : rail === 'card' ? 'card' : 'bank_transfer',
 		rail,
 		amountMinor: totalMinor,
 		currency,
@@ -132,12 +132,12 @@ function resolveSettlementPaymentLines(order, patch, branchPaymentMethods = null
 	const digits = fractionDigitsForCurrency(currency);
 	const rawLines = settlementLinesFromLegacyPatch(order, patch);
 	const methodIds = [...new Set(rawLines.map((line) => line.methodId).filter(Boolean))];
-	const methods = normalizePaymentMethods(
-		Array.isArray(branchPaymentMethods) && branchPaymentMethods.length
-			? ['cash', 'card', ...branchPaymentMethods]
-			: (methodIds.length ? methodIds : ['cash', 'card', 'bank_transfer']),
-		{ accountingCurrency: currency },
-	);
+	const methods = Array.isArray(branchPaymentMethods)
+		? normalizeConfiguredPaymentMethods(branchPaymentMethods, { accountingCurrency: currency })
+		: normalizePaymentMethods(
+			methodIds.length ? methodIds : ['efectivo', 'card', 'bank_transfer'],
+			{ accountingCurrency: currency },
+		);
 	const quote = {
 		totalMinor: resolveOrderDueMinor(order),
 		currency,
@@ -719,7 +719,7 @@ export const AdminProvider = ({
 	});
 
 	const moveOrder = useCallback(async (orderId, nextStatus) => {
-		if (orderMoveInFlightRef.current.has(orderId)) return;
+		if (orderMoveInFlightRef.current.has(orderId)) return false;
 		orderMoveInFlightRef.current.add(orderId);
 		invalidateBranchOrders(companyId, selectedBranchId);
 		const previousRow = orders.find((o) => o.id === orderId);
@@ -736,7 +736,7 @@ export const AdminProvider = ({
 					void cashSystem.refresh?.();
 				}
 				showNotify('Pedido actualizado');
-				return;
+				return true;
 			}
 			const targetOrder = previousRow;
 
@@ -756,7 +756,7 @@ export const AdminProvider = ({
 				setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
 				void cashSystem.refresh?.();
 				showNotify('Pedido y caja actualizados');
-				return;
+				return true;
 			}
 
 			const { error } = await supabase.from(TABLES.orders).update({ status: nextStatus }).eq('id', orderId).eq('company_id', companyId);
@@ -770,16 +770,18 @@ export const AdminProvider = ({
 							'Pedido cancelado, pero no se pudo registrar la devolución en caja. Revisa el turno y ajusta manualmente.',
 							'error',
 						);
-						return;
+						return false;
 					}
 				}
 			}
 			showNotify('Pedido actualizado');
+			return true;
 		} catch (error) {
 			if (previousRow) {
 				setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...previousRow } : o)));
 			}
 			showNotify(error?.message || 'Error al actualizar', 'error');
+			return false;
 		} finally {
 			orderMoveInFlightRef.current.delete(orderId);
 		}

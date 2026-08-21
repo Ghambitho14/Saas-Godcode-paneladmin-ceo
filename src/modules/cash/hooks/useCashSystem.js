@@ -353,12 +353,13 @@ export const useCashSystem = (showNotify, branchId, orders = [], options = {}) =
 
         // 2. Escenario Admin Global: Buscar turno abierto específico para esa sucursal
         if (orderBranchId) {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from(TABLES.cash_shifts)
                 .select('id, expected_balance, branch_id')
                 .eq('status', 'open')
                 .eq('branch_id', orderBranchId)
                 .maybeSingle();
+            if (error) throw error;
             return data;
         }
         return null;
@@ -499,19 +500,35 @@ export const useCashSystem = (showNotify, branchId, orders = [], options = {}) =
     /**
      * Registra una devolución
      */
-    const registerRefund = useCallback(async (order) => {
-        const targetShift = await getTargetShift(order.branch_id);
-        if (!targetShift) {
-            if (showNotify) showNotify('No hay caja abierta para esta sucursal', 'error');
-            return false;
-        }
-
+    const registerRefund = useCallback(async (order, options = {}) => {
         try {
-            const { data: movements } = await supabase
+            const orderBranchId = order?.branch_id;
+            if (!orderBranchId) {
+                if (showNotify) showNotify('El pedido no tiene una sucursal asociada', 'error');
+                return false;
+            }
+            if (options.expectedBranchId && orderBranchId !== options.expectedBranchId) {
+                if (showNotify) showNotify('El pedido no pertenece a la sucursal seleccionada', 'error');
+                return false;
+            }
+
+            let targetShift = options.targetShift ?? null;
+            if (targetShift && targetShift.branch_id !== orderBranchId) {
+                if (showNotify) showNotify('La caja abierta no corresponde a la sucursal del pedido', 'error');
+                return false;
+            }
+            if (!targetShift) targetShift = await getTargetShift(orderBranchId);
+            if (!targetShift) {
+                if (showNotify) showNotify('No hay caja abierta para esta sucursal', 'error');
+                return false;
+            }
+
+            const { data: movements, error: movementsError } = await supabase
                 .from(TABLES.cash_movements)
 				.select('type, amount, amount_minor, currency, payment_method')
                 .eq('shift_id', targetShift.id)
                 .eq('order_id', order.id);
+            if (movementsError) throw movementsError;
 
             const planned = planRefundMovements(order, movements || []);
             if (planned.length === 0) return true;
@@ -538,8 +555,10 @@ export const useCashSystem = (showNotify, branchId, orders = [], options = {}) =
             }
             if (showNotify) showNotify('Devolución registrada en caja', 'success');
             return true;
-        } catch {
-            if (showNotify) showNotify('Error registrando devolución', 'error');
+        } catch (error) {
+            if (showNotify) {
+                showNotify(error?.message || 'Error al consultar o registrar la devolución', 'error');
+            }
             return false;
         }
     }, [activeShift, showNotify, applyLocalMovementInserts, getTargetShift]);

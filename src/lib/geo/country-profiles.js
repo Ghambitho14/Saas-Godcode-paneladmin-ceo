@@ -41,7 +41,7 @@ export const COUNTRY_PROFILES = Object.freeze({
 			validate: validateRut,
 		}),
 		cashDenominations: Object.freeze({ CLP: Object.freeze([1000, 2000, 5000, 10000, 20000]) }),
-		suggestedPaymentMethods: Object.freeze(['cash', 'card', 'bank_transfer']),
+		suggestedPaymentMethods: Object.freeze(['efectivo', 'card', 'bank_transfer']),
 	}),
 	VE: Object.freeze({
 		countryCode: 'VE',
@@ -74,7 +74,7 @@ export const COUNTRY_PROFILES = Object.freeze({
 			validate: optionalDocument,
 		}),
 		cashDenominations: Object.freeze({}),
-		suggestedPaymentMethods: Object.freeze(['cash', 'card', 'bank_transfer']),
+		suggestedPaymentMethods: Object.freeze(['efectivo', 'card', 'bank_transfer']),
 	}),
 });
 

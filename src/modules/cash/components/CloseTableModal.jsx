@@ -22,7 +22,7 @@ import { useLockBodyScroll } from '@/shared/hooks/useLockBodyScroll';
 import TableSessionReceipt from './TableSessionReceipt';
 import { Button } from "@/components/ui/button";
 import { isoFractionDigits, minorToMajor } from '@/lib/money/minor-units';
-import { normalizePaymentMethods, validatePaymentLines } from '../domain/payment-methods';
+import { normalizeConfiguredPaymentMethods, validatePaymentLines } from '../domain/payment-methods';
 import { useReceiptUpload } from '../hooks/manual-order/useReceiptUpload';
 
 
@@ -162,7 +162,7 @@ export default function CloseTableModal({
 	const currency = String(order.currency || branch?.currency || 'CLP').toUpperCase();
 	const fractionDigits = isoFractionDigits(currency, branch?.manual_order_settings?.currencyFractionDigits);
 	const isV2Order = order.manual_order_mode === 'session' || order.manual_order_mode === 'quick_sale';
-	const paymentMethods = normalizePaymentMethods(['cash', 'card', ...(branch?.payment_methods || [])], { accountingCurrency: currency });
+	const paymentMethods = normalizeConfiguredPaymentMethods(branch?.payment_methods, { accountingCurrency: currency });
 	const dueMinor = resolveOrderDueMinor(order);
 	const total = !confirmOnly
 		? minorToMajor(dueMinor, currency, fractionDigits)
