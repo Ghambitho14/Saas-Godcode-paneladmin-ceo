@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, createContext, useContext, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase, TABLES, getCurrentUser } from '@/integrations/supabase';
 import { useCashSystem } from '../../hooks/useCashSystem';
@@ -302,7 +302,10 @@ export const AdminProvider = ({
 	const sessionRestoredRef = useRef(false);
 	const isModalOpenRef = useRef(false);
 	const editingProductRef = useRef(/** @type {unknown} */ (null));
-	const [isMobile, setIsMobile] = useState(false);
+	const [isMobile, setIsMobile] = useState(() => {
+		if (typeof window === 'undefined') return false;
+		return window.matchMedia(ADMIN_MOBILE_MQ).matches;
+	});
 	const [selectedClient, setSelectedClient] = useState(null);
 	const [selectedClientOrders, setSelectedClientOrders] = useState([]);
 	const [clientHistoryLoading, setClientHistoryLoading] = useState(false);

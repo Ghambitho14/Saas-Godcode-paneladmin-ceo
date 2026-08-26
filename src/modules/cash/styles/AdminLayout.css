@@ -941,34 +941,53 @@
 		flex-direction: column;
 		overflow-x: hidden;
 		max-width: 100%;
-		min-height: var(--app-vh, 100dvh);
-		height: auto;
+		min-height: 100vh;
+		min-height: 100dvh;
+		height: 100dvh;
 	}
 
 	.admin-content {
-		padding: 16px 14px;
-		padding-bottom: 96px;
+		padding: 12px 14px;
+		padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 		width: 100%;
 		max-width: 100%;
 		margin-left: 0;
 		box-sizing: border-box;
 		overflow-x: hidden;
-		overflow-y: visible;
-		flex: 0 1 auto;
-		min-height: auto;
-	}
-
-	/* Pedidos / mesas: el contenido sí debe ocupar el alto disponible */
-	.admin-layout .admin-content:has(.kanban-board),
-	.admin-layout .admin-content:has(.admin-tables-grid) {
+		overflow-y: auto;
 		flex: 1 1 auto;
 		min-height: 0;
+	}
+
+	/* Pedidos / mesas: el contenido sí debe ocupar el alto disponible y no tener scroll externo */
+	.admin-layout .admin-content:has(.kanban-board),
+	.admin-layout .admin-content:has(.admin-tables-grid) {
+		flex: 1 1 0;
+		min-height: 0;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
 		overflow-y: hidden;
+		padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 	}
 
 	.admin-layout .content-header {
 		overflow-x: hidden;
 		max-width: 100%;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		align-items: stretch;
+		column-gap: 12px;
+		row-gap: 0;
+		margin-bottom: 8px;
+		padding-bottom: 8px;
+		padding-top: max(4px, env(safe-area-inset-top, 0px));
+		padding-left: max(0px, env(safe-area-inset-left, 0px));
+		padding-right: max(0px, env(safe-area-inset-right, 0px));
+		position: sticky;
+		top: 0;
+		z-index: 40;
+		flex-shrink: 0;
 	}
 
 	.admin-layout .header-actions {
@@ -993,17 +1012,6 @@
 	.admin-layout .admin-content > * {
 		max-width: 100%;
 		min-width: 0;
-	}
-
-	/* Cabecera en móvil/tablet: no forzar una sola fila; acciones con varias líneas cómodas */
-	.admin-layout .content-header {
-		flex-direction: column;
-		flex-wrap: nowrap;
-		align-items: stretch;
-		column-gap: 12px;
-		row-gap: 0;
-		padding-left: max(0px, env(safe-area-inset-left, 0px));
-		padding-right: max(0px, env(safe-area-inset-right, 0px));
 	}
 
 	/* Pedidos en vivo: sin hueco de título; acciones arrancan arriba */

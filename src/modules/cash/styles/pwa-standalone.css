@@ -14,8 +14,8 @@ html.pwa-standalone {
 
 @media (max-width: 1024px) {
 	html.pwa-standalone .admin-layout .content-header {
-		top: var(--pwa-safe-top);
-		padding-top: 8px;
+		top: 0;
+		padding-top: max(8px, var(--pwa-safe-top));
 		padding-left: max(0px, var(--pwa-safe-left));
 		padding-right: max(0px, var(--pwa-safe-right));
 	}
@@ -23,32 +23,34 @@ html.pwa-standalone {
 	html.pwa-standalone .admin-layout .admin-content {
 		padding-left: max(14px, var(--pwa-safe-left));
 		padding-right: max(14px, var(--pwa-safe-right));
-		padding-bottom: calc(96px + var(--pwa-safe-bottom) + var(--pwa-bottom-stack-gap));
+		padding-bottom: calc(72px + var(--pwa-safe-bottom));
+	}
+
+	html.pwa-standalone .admin-layout .admin-content:has(.kanban-board),
+	html.pwa-standalone .admin-layout .admin-content:has(.admin-tables-grid) {
+		padding-bottom: calc(72px + var(--pwa-safe-bottom));
 	}
 
 	html.pwa-standalone .admin-layout .admin-sidebar,
 	html.pwa-standalone .admin-layout .admin-sidebar:hover {
-		padding-bottom: calc(var(--pwa-safe-bottom) + var(--pwa-bottom-stack-gap));
+		padding-bottom: max(8px, var(--pwa-safe-bottom));
 		padding-left: max(8px, var(--pwa-safe-left));
 		padding-right: max(8px, var(--pwa-safe-right));
 	}
 
 	html.pwa-standalone .admin-layout .mobile-tabs {
-		margin-bottom: calc(16px + var(--pwa-bottom-stack-gap) * 0.35);
+		margin-bottom: 8px;
+		flex-shrink: 0;
 	}
 
 	html.pwa-standalone .admin-layout .kanban-board {
-		height: calc(
-			100dvh - 190px - var(--pwa-safe-top) - var(--pwa-safe-bottom) - var(--pwa-bottom-stack-gap)
-		);
-		min-height: min(
-			520px,
-			calc(100dvh - 240px - var(--pwa-safe-top) - var(--pwa-safe-bottom) - var(--pwa-bottom-stack-gap))
-		);
+		flex: 1 1 0;
+		min-height: 0;
+		height: auto;
 	}
 
 	html.pwa-standalone .admin-layout .kanban-board .column-body {
-		padding-bottom: calc(10px + var(--pwa-safe-bottom) + var(--pwa-bottom-stack-gap) * 0.5);
+		padding-bottom: max(10px, var(--pwa-safe-bottom));
 	}
 }
 

@@ -40,7 +40,19 @@ export function AppShell({ children }: AppShellProps) {
     };
     apply();
     window.addEventListener("visibilitychange", apply);
-    return () => window.removeEventListener("visibilitychange", apply);
+    window.addEventListener("pageshow", apply);
+    window.addEventListener("focus", apply);
+
+    const standaloneMq = window.matchMedia("(display-mode: standalone)");
+    const onMqChange = () => apply();
+    standaloneMq.addEventListener?.("change", onMqChange);
+
+    return () => {
+      window.removeEventListener("visibilitychange", apply);
+      window.removeEventListener("pageshow", apply);
+      window.removeEventListener("focus", apply);
+      standaloneMq.removeEventListener?.("change", onMqChange);
+    };
   }, []);
 
   useEffect(() => {

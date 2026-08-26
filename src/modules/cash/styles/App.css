@@ -2,13 +2,22 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  min-height: var(--app-vh, 100dvh);
-  height: var(--app-vh, 100dvh);
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100%;
   background: var(--surface-page, #fbfbfd);
   touch-action: pan-x pan-y;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) {
+  .tenant-shell-root:has(.admin-layout) {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow-y: hidden;
+  }
 }
 
 #app-content-layer {

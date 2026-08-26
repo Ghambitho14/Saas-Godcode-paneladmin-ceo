@@ -66,13 +66,16 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  min-height: var(--app-vh, 100dvh);
+  min-height: 100vh;
+  min-height: 100dvh;
   touch-action: manipulation;
 }
 
 html, body, #app {
   height: 100%;
-  min-height: var(--app-vh, 100dvh);
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* iOS Safari hace zoom al enfocar campos con font-size < 16px */

@@ -404,19 +404,22 @@
 @media (max-width: 1024px) {
 	.admin-layout .mobile-tabs {
 		display: grid;
+		margin-bottom: 8px;
+		flex-shrink: 0;
 	}
 
 	.admin-layout .mobile-tabs button {
 		min-width: 0;
-		padding: 8px 4px;
+		padding: 7px 4px;
 		font-size: clamp(0.72rem, 2.4vw, 0.85rem);
 	}
 
     .admin-layout .kanban-board {
         display: flex;
         flex-direction: column;
-        height: calc(100dvh - 190px - env(safe-area-inset-bottom, 0px));
-        min-height: min(520px, calc(100dvh - 240px));
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto;
         gap: 0;
         overflow-x: hidden;
         overflow-y: hidden;
@@ -426,6 +429,9 @@
     .admin-layout .kanban-column {
         height: 100%;
         min-height: 0;
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
         border: 1px solid var(--admin-border, #e2e8f0);
         background: var(--admin-card-bg, #fff);
         box-shadow: var(--admin-shadow-md, 0 12px 40px rgba(15, 23, 42, 0.1));
@@ -433,13 +439,16 @@
     }
 
     .admin-layout .column-header {
+        flex-shrink: 0;
         background: #ffffff;
         border-bottom: 1px solid #e5e5ea;
-        padding: 12px 14px;
+        padding: 10px 14px;
         margin-bottom: 0;
     }
 
     .admin-layout .column-body {
+        flex: 1 1 0;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         align-items: stretch;
@@ -447,6 +456,7 @@
         padding: 10px;
         overflow-y: auto;
         overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
     }
 
     .admin-layout .empty-zone {

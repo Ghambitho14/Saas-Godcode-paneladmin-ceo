@@ -15,6 +15,7 @@ function isFormField(el: EventTarget | null) {
 
 /** Sincroniza altura/ancho real (visual viewport) para layout y barra URL dinámica del navegador. */
 export function syncMobileViewportVars() {
+	if (typeof window === "undefined") return;
 	const vv = window.visualViewport;
 	const height = vv?.height ?? window.innerHeight;
 	const width = vv?.width ?? window.innerWidth;
@@ -49,6 +50,18 @@ export function useAntiZoom() {
 		applyViewportMeta();
 		syncMobileViewportVars();
 
+		// Forzar re-sincronizaciones tempranas durante el arranque en standalone (WebKit/SpringBoard frame settling)
+		const timers = [
+			window.setTimeout(syncMobileViewportVars, 50),
+			window.setTimeout(syncMobileViewportVars, 150),
+			window.setTimeout(syncMobileViewportVars, 300),
+			window.setTimeout(syncMobileViewportVars, 600),
+			window.setTimeout(syncMobileViewportVars, 1000),
+		];
+		if (typeof window.requestAnimationFrame === "function") {
+			window.requestAnimationFrame(syncMobileViewportVars);
+		}
+
 		const handleGestureStart = (event: Event) => event.preventDefault();
 		const handleWheel = (event: WheelEvent) => {
 			if (event.ctrlKey || event.metaKey) event.preventDefault();
@@ -77,6 +90,9 @@ export function useAntiZoom() {
 		document.addEventListener("focusout", onFocusOut);
 		window.addEventListener("resize", onViewportChange);
 		window.addEventListener("orientationchange", onOrientationChange);
+		window.addEventListener("pageshow", onViewportChange);
+		window.addEventListener("focus", onViewportChange);
+		window.addEventListener("visibilitychange", onViewportChange);
 
 		if (vv) {
 			vv.addEventListener("resize", onViewportChange);
@@ -84,12 +100,16 @@ export function useAntiZoom() {
 		}
 
 		return () => {
+			timers.forEach((t) => window.clearTimeout(t));
 			document.removeEventListener("gesturestart", handleGestureStart);
 			document.removeEventListener("wheel", handleWheel as EventListener);
 			document.removeEventListener("keydown", handleKeydown);
 			document.removeEventListener("focusout", onFocusOut);
 			window.removeEventListener("resize", onViewportChange);
 			window.removeEventListener("orientationchange", onOrientationChange);
+			window.removeEventListener("pageshow", onViewportChange);
+			window.removeEventListener("focus", onViewportChange);
+			window.removeEventListener("visibilitychange", onViewportChange);
 			if (vv) {
 				vv.removeEventListener("resize", onViewportChange);
 				vv.removeEventListener("scroll", onViewportChange);
