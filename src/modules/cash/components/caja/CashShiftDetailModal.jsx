@@ -218,25 +218,43 @@ const CashShiftDetailModal = ({ isOpen, onClose, shift, getTotals, orders = [], 
         (async () => {
             const fallback = `Usuario ${String(openedById).slice(0, 8)}`;
             try {
-                const lookupBy = async (column) => {
-                    const { data, error } = await supabase
+                // 1. Buscar en tabla users (por id o auth_user_id)
+                let { data: userRow } = await supabase
+                    .from(TABLES.users)
+                    .select('id, email, auth_user_id')
+                    .eq('id', openedById)
+                    .maybeSingle();
+
+                if (!userRow?.email) {
+                    const byAuth = await supabase
                         .from(TABLES.users)
                         .select('id, email, auth_user_id')
-                        .eq(column, openedById)
+                        .eq('auth_user_id', openedById)
                         .maybeSingle();
-                    if (error) return { data: null, error };
-                    return { data, error: null };
-                };
+                    if (byAuth.data?.email) userRow = byAuth.data;
+                }
 
-                let { data } = await lookupBy('id');
-                if (!data?.email) {
-                    const byAuth = await lookupBy('auth_user_id');
-                    if (byAuth.data) data = byAuth.data;
+                // 2. Si no se encuentra en users, buscar en admin_users
+                if (!userRow?.email) {
+                    const { data: adminRow } = await supabase
+                        .from(TABLES.admin_users)
+                        .select('id, email, auth_user_id')
+                        .eq('id', openedById)
+                        .maybeSingle();
+                    if (adminRow?.email) userRow = adminRow;
+                    else {
+                        const byAdminAuth = await supabase
+                            .from(TABLES.admin_users)
+                            .select('id, email, auth_user_id')
+                            .eq('auth_user_id', openedById)
+                            .maybeSingle();
+                        if (byAdminAuth.data?.email) userRow = byAdminAuth.data;
+                    }
                 }
 
                 if (cancelled) return;
 
-                const email = data?.email ? String(data.email).trim() : '';
+                const email = userRow?.email ? String(userRow.email).trim() : '';
                 setOpenedByLabel(email || fallback);
             } catch {
                 if (!cancelled) {

@@ -3,7 +3,7 @@
 export const CASH_SHIFT_META_SELECT =
 	'id, status, branch_id, company_id, opening_balance, expected_balance, ' +
 	'actual_balance, actual_card_balance, actual_online_balance, ' +
-	'expected_card_balance, expected_online_balance, opened_at, closed_at';
+	'expected_card_balance, expected_online_balance, opened_at, closed_at, opened_by';
 
 export const CASH_SHIFT_ACTIVE_SELECT = `${CASH_SHIFT_META_SELECT}, cash_movements(count)`;
 
