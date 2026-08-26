@@ -4,7 +4,7 @@ import {
     Clock, Calendar, TrendingUp, TrendingDown,
     ArrowUpCircle, ArrowDownCircle, Eye, XCircle,
     DollarSign, CreditCard, ChevronRight, Truck,
-    MapPin,
+    MapPin, Banknote, Smartphone,
 } from 'lucide-react';
 import { useAdmin } from '@/modules/cash/admin/pages/AdminProvider';
 import { isValidBranchId } from '@/shared/utils/safeIds';
@@ -179,66 +179,92 @@ const CashManager = ({
 
     return (
         <div className="cash-container animate-fade">
-            {/* HEADER — solo con turno activo */}
+            {/* BENTO HERO HEADER — Estilo Dribbble Restaurant Operations */}
             {activeShift ? (
-                <header className="cash-header">
-                    <div className="cash-header-brand">
-                        <div className="cash-header-titles">
-                            <div className="cash-shift-heading" role="status">
-                                <span className="cash-pulse" aria-hidden />
-                                <h1 className="cash-page-title">Turno activo</h1>
-                            </div>
-                            <p className="cash-shift-meta">
-                                <Clock size={14} aria-hidden />
-                                <span>
-                                    <ElapsedTime since={activeShift.opened_at} />
-                                    {' · desde '}
-                                    {new Date(activeShift.opened_at).toLocaleTimeString('es-CL', {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                    })}
+                <div className="cash-dribbble-hero cash-dribbble-hero--active">
+                    <div className="cash-dribbble-hero__body">
+                        <h1 className="cash-dribbble-title">Caja abierta</h1>
+                        <div className="cash-dribbble-chips">
+                            <span className="cash-dribbble-chip">
+                                <Clock size={13} aria-hidden />
+                                <ElapsedTime since={activeShift.opened_at} />
+                            </span>
+                            <span className="cash-dribbble-chip">
+                                Desde {new Date(activeShift.opened_at).toLocaleTimeString('es-CL', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                })}
+                            </span>
+                            {activeShift.opening_balance != null && (
+                                <span className="cash-dribbble-chip cash-dribbble-chip--base">
+                                    Base: {fmt(activeShift.opening_balance || 0)}
                                 </span>
-                            </p>
+                            )}
                         </div>
                     </div>
-                    <div className="cash-header-actions" role="group" aria-label="Acciones del turno">
+
+                    <div className="cash-dribbble-hero__actions" role="group" aria-label="Acciones del turno">
                         <Button
                             variant="outline"
                             type="button"
-                            className="cash-action-btn cash-action-btn--income"
+                            className="cash-dribbble-btn cash-dribbble-btn--income"
                             onClick={() => {
                                 setMovementModalVariant('income');
                                 setIsMovementModalOpen(true);
                             }}
                         >
-                            <ArrowUpCircle size={16} aria-hidden className="cash-action-icon" /> Ingreso
+                            <ArrowUpCircle size={17} className="cash-dribbble-btn__icon" />
+                            <span>Ingreso</span>
                         </Button>
                         <Button
                             variant="outline"
                             type="button"
-                            className="cash-action-btn cash-action-btn--withdraw"
+                            className="cash-dribbble-btn cash-dribbble-btn--withdraw"
                             onClick={() => {
                                 setMovementModalVariant('cash_withdrawal');
                                 setIsMovementModalOpen(true);
                             }}
-                            title="Retiro de efectivo del turno (compras menores, vuelto). Gastos grandes: Ventas → Gastos del local."
+                            title="Retiro de efectivo del turno"
                         >
-                            <ArrowDownCircle size={16} aria-hidden className="cash-action-icon" /> Sacar efectivo
+                            <ArrowDownCircle size={17} className="cash-dribbble-btn__icon" />
+                            <span>Retiro</span>
                         </Button>
                         <Button
                             variant="outline"
                             type="button"
-                            className="cash-action-btn cash-action-btn--close"
+                            className="cash-dribbble-btn cash-dribbble-btn--close"
                             onClick={() => setIsShiftModalOpen(true)}
                         >
-                            <Lock size={16} aria-hidden className="cash-action-icon" /> Cerrar turno
+                            <Lock size={15} className="cash-dribbble-btn__icon" />
+                            <span>Cerrar turno</span>
                         </Button>
                     </div>
-                </header>
-            ) : null}
+                </div>
+            ) : (
+                <div className="cash-dribbble-hero cash-dribbble-hero--closed" aria-label="Sin turno abierto">
+                    <div className="cash-dribbble-hero__body">
+                        <h1 className="cash-dribbble-title">Caja cerrada</h1>
+                        <div className="cash-dribbble-chips">
+                            <span className="cash-dribbble-chip">Sin turno activo</span>
+                        </div>
+                    </div>
+
+                    <div className="cash-dribbble-hero__actions">
+                        <Button
+                            variant="default"
+                            type="button"
+                            className="cash-dribbble-btn cash-dribbble-btn--open"
+                            onClick={() => setIsShiftModalOpen(true)}
+                        >
+                            <Unlock size={17} />
+                            <span>Abrir turno</span>
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* TURNO ACTIVO: KPI DASHBOARD */}
-            {activeShift ? (
+            {activeShift && (
                 <section className="cash-section cash-section--active">
                     <div className="cash-kpi-grid">
                         <div className="cash-kpi">
@@ -293,23 +319,38 @@ const CashManager = ({
 
                     <div className="cash-methods-panel">
                         <div className="cash-methods-panel-header">
-                            <AdminIconSlot Icon={CreditCard} slotSize="sm" />
+                            <AdminIconSlot Icon={CreditCard} slotSize="sm" tone="accent" />
                             <div className="cash-methods-panel-titles">
                                 <span className="cash-methods-panel-title">Cobros por método</span>
                                 <span className="cash-kpi-sub">Solo ventas de pedidos</span>
                             </div>
                         </div>
                         <div className="cash-methods-metrics">
-                            <div className="cash-method-metric">
-                                <span className="cash-method-metric-label">Efectivo</span>
+                            <div className="cash-method-metric cash-method-metric--cash">
+                                <div className="cash-method-metric-top">
+                                    <div className="cash-method-icon cash-method-icon--cash">
+                                        <Banknote size={15} aria-hidden />
+                                    </div>
+                                    <span className="cash-method-metric-label">Efectivo</span>
+                                </div>
                                 <strong className="cash-method-metric-value">{fmt(totals.cash)}</strong>
                             </div>
-                            <div className="cash-method-metric">
-                                <span className="cash-method-metric-label">Tarjeta</span>
+                            <div className="cash-method-metric cash-method-metric--card">
+                                <div className="cash-method-metric-top">
+                                    <div className="cash-method-icon cash-method-icon--card">
+                                        <CreditCard size={15} aria-hidden />
+                                    </div>
+                                    <span className="cash-method-metric-label">Tarjeta</span>
+                                </div>
                                 <strong className="cash-method-metric-value">{fmt(totals.card)}</strong>
                             </div>
-                            <div className="cash-method-metric">
-                                <span className="cash-method-metric-label">Transf.</span>
+                            <div className="cash-method-metric cash-method-metric--online">
+                                <div className="cash-method-metric-top">
+                                    <div className="cash-method-icon cash-method-icon--online">
+                                        <Smartphone size={15} aria-hidden />
+                                    </div>
+                                    <span className="cash-method-metric-label">Transferencia</span>
+                                </div>
                                 <strong className="cash-method-metric-value">{fmt(totals.online)}</strong>
                             </div>
                         </div>
@@ -398,22 +439,6 @@ const CashManager = ({
                         </div>
                     )}
                 </section>
-            ) : (
-                <section className="cash-empty-state cash-empty-state--cta" aria-label="Sin turno abierto">
-                    <div className="cash-empty-icon" aria-hidden>
-                        <Lock size={32} />
-                    </div>
-                    <h1 className="cash-page-title cash-page-title--muted">Sin turno abierto</h1>
-                    <p className="cash-shift-meta">Abre un turno para registrar movimientos</p>
-                    <Button
-                        variant="default"
-                        type="button"
-                        className="btn-open-shift"
-                        onClick={() => setIsShiftModalOpen(true)}
-                    >
-                        <Unlock size={18} aria-hidden /> Abrir turno
-                    </Button>
-                </section>
             )}
 
             {/* HISTORIAL DE TURNOS */}
@@ -457,47 +482,43 @@ const CashManager = ({
                             };
 
                             return (
-                                <div key={shift.id} className="cash-history-card" onClick={() => setViewingShift(shift)}>
-                                    <div className="cash-history-date">
-                                        <span className="cash-history-day">
-                                            {formatShiftOpenedDay(shift.opened_at)}
-                                        </span>
-                                        <span className="cash-history-hours">{hoursRange}</span>
-                                        <div className="cash-history-meta">
-                                            <span className="cash-history-duration">
-                                                <Clock size={12} aria-hidden /> {durationStr}
-                                            </span>
-                                            <span className="cash-history-orders">
-                                                {ordersCount} {ordersCount === 1 ? 'pedido' : 'pedidos'}
+                                <div
+                                    key={shift.id}
+                                    className="cash-history-card"
+                                    onClick={() => setViewingShift(shift)}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={e => e.key === 'Enter' && setViewingShift(shift)}
+                                >
+                                    <div className="cash-history-item-left">
+                                        <div className="cash-history-avatar">
+                                            <Calendar size={18} aria-hidden />
+                                        </div>
+                                        <div className="cash-history-info">
+                                            <div className="cash-history-title-row">
+                                                <span className="cash-history-day">
+                                                    {formatShiftOpenedDay(shift.opened_at)}
+                                                </span>
+                                                <span className="cash-history-orders-badge">
+                                                    {ordersCount} {ordersCount === 1 ? 'pedido' : 'pedidos'}
+                                                </span>
+                                            </div>
+                                            <span className="cash-history-hours">
+                                                {hoursRange} · {durationStr}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="cash-history-amounts">
-                                        <div className="cash-history-col">
-                                            <label>Ingresos</label>
-                                            <span className="cash-history-col__income">+{fmt(summary.income)}</span>
+                                    <div className="cash-history-item-right">
+                                        <div className="cash-history-amount-group">
+                                            <span className="cash-history-main-amount">
+                                                +{fmt(summary.income)}
+                                            </span>
+                                            <span className="cash-history-sub-amount">
+                                                Efectivo {fmt(summary.cash)}
+                                            </span>
                                         </div>
-                                        <div className="cash-history-col">
-                                            <label>Delivery</label>
-                                            <span className="cash-history-col__delivery">{fmt(summary.deliveryPending)}</span>
-                                        </div>
-                                        <div className="cash-history-col">
-                                            <label>Efectivo</label>
-                                            <span>{fmt(summary.cash)}</span>
-                                        </div>
-                                        <div className="cash-history-col">
-                                            <label>Tarjeta</label>
-                                            <span>{fmt(summary.card)}</span>
-                                        </div>
-                                        <div className="cash-history-col">
-                                            <label>Transf.</label>
-                                            <span>{fmt(summary.online)}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="cash-history-arrow" aria-hidden>
-                                        <Eye size={16} />
+                                        <ChevronRight size={18} className="cash-history-chevron" aria-hidden />
                                     </div>
                                 </div>
                             );

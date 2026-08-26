@@ -283,151 +283,270 @@
 .admin-layout .cash-container .flex-center { display: flex; align-items: center; justify-content: center; }
 
 /* ===========================================
-   3. HEADER & GLOBAL ACTIONS
+   3. DRIBBBLE-INSPIRED BENTO HERO (Restaurant Operations)
    =========================================== */
-.admin-layout .cash-header {
+.admin-layout .cash-dribbble-hero {
+    border-radius: 22px;
+    padding: 18px 22px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.admin-layout .cash-header-brand {
-    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    min-width: 0;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
     text-align: center;
 }
 
-.admin-layout .cash-header-titles {
+/* Active State: Clean White Card with Crisp Emerald Border */
+.admin-layout .cash-dribbble-hero--active {
+    background: #ffffff;
+    border: 1.5px solid #86efac;
+    color: #0f172a;
+    box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .admin-layout .cash-dribbble-hero--active,
+.dark .admin-layout .cash-dribbble-hero--active {
+    background: var(--admin-card-bg, #18181b);
+    border: 1.5px solid rgba(52, 211, 153, 0.45);
+    color: #ecfdf5;
+}
+
+/* Closed State: Clean White Card with Crisp Sky Blue Border */
+.admin-layout .cash-dribbble-hero--closed {
+    background: #ffffff;
+    border: 1.5px solid #93c5fd;
+    color: #0f172a;
+    box-shadow: 0 4px 20px -2px rgba(59, 130, 246, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .admin-layout .cash-dribbble-hero--closed,
+.dark .admin-layout .cash-dribbble-hero--closed {
+    background: var(--admin-card-bg, #18181b);
+    border: 1.5px solid rgba(96, 165, 250, 0.4);
+    color: #f1f5f9;
+}
+
+.admin-layout .cash-dribbble-hero__body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    min-width: 0;
-}
-
-.admin-layout .cash-shift-heading {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     gap: 8px;
     min-width: 0;
-}
-
-.admin-layout .cash-page-title {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--c-text);
-    line-height: 1.2;
-}
-
-.admin-layout .cash-page-title--muted {
-    color: var(--c-text-muted);
-    font-weight: 650;
-}
-
-.admin-layout .cash-shift-meta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin: 0;
-    font-size: 0.82rem;
-    font-weight: 550;
-    color: var(--c-text-muted);
-    line-height: 1.35;
-    font-variant-numeric: tabular-nums;
     text-align: center;
 }
 
-.admin-layout .cash-shift-meta svg {
-    flex-shrink: 0;
-    color: color-mix(in srgb, var(--c-text-muted) 85%, transparent);
+.admin-layout .cash-dribbble-title {
+    margin: 0;
+    font-size: 1.38rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-transform: none;
+    color: #0f172a;
+    line-height: 1.2;
+    text-align: center;
 }
 
-.admin-layout .cash-status-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    width: fit-content;
-    max-width: 100%;
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.35;
-    border: 1px solid var(--cash-border);
-    background: var(--cash-surface);
-    color: var(--c-text-muted);
+[data-theme="dark"] .admin-layout .cash-dribbble-title,
+.dark .admin-layout .cash-dribbble-title {
+    color: #ffffff;
 }
 
-.admin-layout .cash-status-chip--active {
-    color: var(--c-income);
-    border-color: color-mix(in srgb, var(--c-income) 28%, var(--cash-border));
-    background: color-mix(in srgb, var(--c-income) 8%, var(--cash-surface));
+.admin-layout .cash-dribbble-hero--closed .cash-dribbble-title {
+    color: #0f172a;
 }
 
-.admin-layout .cash-status-chip--closed {
-    color: var(--c-text-muted);
+[data-theme="dark"] .admin-layout .cash-dribbble-hero--closed .cash-dribbble-title,
+.dark .admin-layout .cash-dribbble-hero--closed .cash-dribbble-title {
+    color: #ffffff;
 }
 
-.admin-layout .cash-header-actions {
+.admin-layout .cash-dribbble-chips {
     display: flex;
+    align-items: center;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* Chips: Floating Pebble Capsules */
+/* Chips: Floating Pebble Capsules */
+.admin-layout .cash-dribbble-chip {
+    display: inline-flex;
     align-items: center;
+    gap: 6px;
+    padding: 5px 13px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    font-variant-numeric: tabular-nums;
 }
 
-.admin-layout .cash-container .cash-action-btn {
-    background: var(--cash-surface) !important;
-    color: var(--c-text) !important;
-    border: 1px solid var(--cash-border) !important;
-    box-shadow: none !important;
-    font-weight: 600;
-    font-size: 0.84rem;
-    padding: 9px 14px;
-    border-radius: 12px;
+.admin-layout .cash-dribbble-hero--active .cash-dribbble-chip {
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #0f172a;
 }
 
-.admin-layout .cash-container .cash-action-btn .cash-action-icon {
-    flex-shrink: 0;
-    color: var(--c-text-muted);
+.admin-layout .cash-dribbble-hero--active .cash-dribbble-chip svg {
+    color: #166534;
 }
 
-.admin-layout .cash-container .cash-action-btn--income .cash-action-icon {
-    color: var(--c-income);
+.admin-layout .cash-dribbble-hero--active .cash-dribbble-chip--base {
+    color: #047857;
+    font-weight: 850;
 }
 
-.admin-layout .cash-container .cash-action-btn--withdraw .cash-action-icon {
-    color: color-mix(in srgb, #d97706 85%, var(--c-text-muted));
+.admin-layout .cash-dribbble-hero--closed .cash-dribbble-chip {
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    color: #0f172a;
 }
 
-.admin-layout .cash-container .cash-action-btn--close .cash-action-icon {
-    color: var(--c-expense);
+.admin-layout .cash-dribbble-hero--closed .cash-dribbble-chip svg {
+    color: #0284c7;
 }
 
-.admin-layout .cash-container .cash-action-btn:hover {
-    background: var(--cash-surface-hover) !important;
-    border-color: color-mix(in srgb, var(--admin-accent) 35%, var(--cash-border)) !important;
-    transform: none;
+[data-theme="dark"] .admin-layout .cash-dribbble-chip,
+.dark .admin-layout .cash-dribbble-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
 }
 
-.admin-layout .cash-container .cash-action-btn--close {
-    color: var(--c-expense) !important;
-    border-color: color-mix(in srgb, var(--c-expense) 32%, var(--cash-border)) !important;
-    margin-left: auto;
+[data-theme="dark"] .admin-layout .cash-dribbble-hero--active .cash-dribbble-chip--base,
+.dark .admin-layout .cash-dribbble-hero--active .cash-dribbble-chip--base {
+    color: #6ee7b7;
 }
 
-.admin-layout .cash-container .cash-action-btn--close:hover {
-    background: color-mix(in srgb, var(--c-expense) 8%, var(--cash-surface)) !important;
-    border-color: color-mix(in srgb, var(--c-expense) 45%, var(--cash-border)) !important;
+/* Action Buttons: Clean Floating Pebble Capsules */
+.admin-layout .cash-dribbble-hero__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 10px 18px !important;
+    border-radius: 9999px !important;
+    font-size: 0.86rem !important;
+    font-weight: 750 !important;
+    font-family: inherit !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    white-space: nowrap !important;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn:hover {
+    transform: translateY(-2px) !important;
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #000000 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn:active {
+    transform: translateY(0) !important;
+}
+
+/* Icon accents inside tone-on-tone buttons */
+.admin-layout .cash-container .cash-dribbble-btn--income .cash-dribbble-btn__icon {
+    color: #15803d;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn--withdraw .cash-dribbble-btn__icon {
+    color: #b45309;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn--close {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn--close .cash-dribbble-btn__icon {
+    color: #e11d48;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn--close:hover {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Open Shift: Soft Lighter Tone Pebble with Brand Accent */
+.admin-layout .cash-container .cash-dribbble-btn--open {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    padding: 12px 24px !important;
+    font-size: 0.92rem !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+.admin-layout .cash-container .cash-dribbble-btn--open:hover {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Dark Mode Tone-on-Tone Overrides */
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn,
+.dark .admin-layout .cash-container .cash-dribbble-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn:hover,
+.dark .admin-layout .cash-container .cash-dribbble-btn:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn--income .cash-dribbble-btn__icon,
+.dark .admin-layout .cash-container .cash-dribbble-btn--income .cash-dribbble-btn__icon {
+    color: #4ade80;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn--withdraw .cash-dribbble-btn__icon,
+.dark .admin-layout .cash-container .cash-dribbble-btn--withdraw .cash-dribbble-btn__icon {
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn--close,
+.dark .admin-layout .cash-container .cash-dribbble-btn--close {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #ffffff !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn--close:hover,
+.dark .admin-layout .cash-container .cash-dribbble-btn--close:hover {
+    background: rgba(239, 68, 68, 0.3) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .cash-dribbble-btn--open,
+.dark .admin-layout .cash-container .cash-dribbble-btn--open {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 /* ===========================================
@@ -1224,15 +1343,31 @@
 }
 
 @media (min-width: 769px) {
-    .admin-layout .cash-header {
+    .admin-layout .cash-dribbble-hero {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
+        gap: 24px;
+        text-align: left;
     }
 
-    .admin-layout .cash-header-actions {
-        flex: 0 1 auto;
+    .admin-layout .cash-dribbble-hero__body {
+        flex: 1 1 auto;
+        min-width: 0;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .admin-layout .cash-dribbble-title {
+        text-align: left;
+    }
+
+    .admin-layout .cash-dribbble-chips {
+        justify-content: flex-start;
+    }
+
+    .admin-layout .cash-dribbble-hero__actions {
+        flex: 0 0 auto;
         justify-content: flex-end;
     }
 
@@ -1283,7 +1418,7 @@
 .admin-layout .cash-kpi {
     background: var(--cash-surface);
     border: 1px solid var(--cash-border);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 16px 18px;
     display: flex;
     flex-direction: column;
@@ -1298,6 +1433,49 @@
     box-shadow: 0 8px 24px -12px rgba(16, 24, 40, 0.12);
     background: var(--cash-surface);
     transform: none;
+}
+
+/* Icon slots in cash container: clean neutral container with vivid icon */
+.admin-layout .cash-container .admin-lucide-slot {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.admin-layout .cash-container .admin-lucide-slot--accent {
+    color: #2563eb;
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+.admin-layout .cash-container .admin-lucide-slot--success {
+    color: #16a34a;
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+.admin-layout .cash-container .admin-lucide-slot--danger {
+    color: #dc2626;
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .admin-lucide-slot {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .admin-layout .cash-container .admin-lucide-slot--accent {
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .admin-lucide-slot--success {
+    color: #4ade80;
+}
+
+[data-theme="dark"] .admin-layout .cash-container .admin-lucide-slot--danger {
+    color: #f87171;
 }
 
 .admin-layout .cash-kpi-header {
@@ -1336,20 +1514,27 @@
 
 /* --- Cobros por método (bloque ancho, ritmo de métricas) --- */
 .admin-layout .cash-methods-panel {
-    background: var(--cash-surface);
-    border: 1px solid var(--cash-border);
-    border-radius: 14px;
-    padding: 16px 18px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    gap: 16px;
+    box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .admin-layout .cash-methods-panel,
+.dark .admin-layout .cash-methods-panel {
+    background: var(--admin-card-bg, #18181b);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .admin-layout .cash-methods-panel-header {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
 }
 
 .admin-layout .cash-methods-panel-titles {
@@ -1360,44 +1545,129 @@
 }
 
 .admin-layout .cash-methods-panel-title {
-    font-size: 0.68rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 750;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--c-text-muted);
+    color: #0f172a;
+}
+
+[data-theme="dark"] .admin-layout .cash-methods-panel-title,
+.dark .admin-layout .cash-methods-panel-title {
+    color: #f1f5f9;
 }
 
 .admin-layout .cash-methods-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 14px;
 }
 
 .admin-layout .cash-method-metric {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     min-width: 0;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--cash-bg) 55%, var(--cash-surface));
-    border: 1px solid color-mix(in srgb, var(--cash-border) 80%, transparent);
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-layout .cash-method-metric:hover {
+    transform: translateY(-2px);
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .admin-layout .cash-method-metric,
+.dark .admin-layout .cash-method-metric {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .admin-layout .cash-method-metric:hover,
+.dark .admin-layout .cash-method-metric:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.admin-layout .cash-method-metric-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-layout .cash-method-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.admin-layout .cash-method-icon--cash {
+    background: #eaf4ef;
+    color: #15803d;
+}
+
+.admin-layout .cash-method-icon--card {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.admin-layout .cash-method-icon--online {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+[data-theme="dark"] .admin-layout .cash-method-icon--cash,
+.dark .admin-layout .cash-method-icon--cash {
+    background: rgba(16, 185, 129, 0.18);
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .admin-layout .cash-method-icon--card,
+.dark .admin-layout .cash-method-icon--card {
+    background: rgba(37, 99, 235, 0.2);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .admin-layout .cash-method-icon--online,
+.dark .admin-layout .cash-method-icon--online {
+    background: rgba(124, 58, 237, 0.2);
+    color: #c4b5fd;
 }
 
 .admin-layout .cash-method-metric-label {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--c-text-muted);
-    letter-spacing: 0.02em;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.01em;
+}
+
+[data-theme="dark"] .admin-layout .cash-method-metric-label,
+.dark .admin-layout .cash-method-metric-label {
+    color: #cbd5e1;
 }
 
 .admin-layout .cash-method-metric-value {
-    font-size: clamp(1.05rem, 2vw, 1.25rem);
-    font-weight: 700;
-    color: var(--c-text);
+    font-size: clamp(1.15rem, 2vw, 1.35rem);
+    font-weight: 850;
+    color: #0f172a;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
     line-height: 1.2;
+}
+
+[data-theme="dark"] .admin-layout .cash-method-metric-value,
+.dark .admin-layout .cash-method-metric-value {
+    color: #ffffff;
 }
 
 /* Legacy methods list (detalle / modales) */
@@ -1680,8 +1950,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
     gap: 12px;
+    width: 100%;
+}
+
+.admin-layout .cash-filters-inline {
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .admin-layout .cash-filters-inline select {
@@ -1736,138 +2011,199 @@
 }
 
 /* --- History Card List --- */
+/* --- History Card List (Grouped iOS / Banking Card) --- */
 .admin-layout .cash-history-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-list,
+.dark .admin-layout .cash-history-list {
+    background: var(--admin-card-bg, #18181b);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .admin-layout .cash-history-card {
     display: flex;
     align-items: center;
-    gap: 16px;
-    background: var(--cash-surface);
-    border: 1px solid var(--cash-border);
-    border-radius: 14px;
-    padding: 16px 20px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 0;
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    transition: background 0.15s ease, transform 0.1s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.admin-layout .cash-history-card:last-child {
+    border-bottom: none;
 }
 
 .admin-layout .cash-history-card:hover {
-    background: var(--cash-surface);
-    border-color: color-mix(in srgb, var(--admin-accent, var(--c-balance)) 28%, var(--cash-border));
-    box-shadow: 0 8px 24px -12px rgba(16, 24, 40, 0.12);
-    transform: none;
+    background: rgba(0, 0, 0, 0.02);
 }
 
-.admin-layout .cash-history-date {
+.admin-layout .cash-history-card:active {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .admin-layout .cash-history-card,
+.dark .admin-layout .cash-history-card {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .admin-layout .cash-history-card:hover,
+.dark .admin-layout .cash-history-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Left: Avatar + Title/Sub */
+.admin-layout .cash-history-item-left {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 168px;
-    flex: 0 1 220px;
-}
-
-.admin-layout .cash-history-day {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: var(--c-text);
-}
-
-.admin-layout .cash-history-hours {
-    font-size: 0.78rem;
-    color: color-mix(in srgb, var(--c-text-muted) 88%, var(--c-text));
-    line-height: 1.35;
-}
-
-.admin-layout .cash-history-meta {
-    display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    margin-top: 2px;
-}
-
-.admin-layout .cash-history-duration {
-    font-size: 0.72rem;
-    color: var(--c-text-muted);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--cash-bg) 70%, var(--cash-surface));
-    border: 1px solid color-mix(in srgb, var(--cash-border) 85%, transparent);
-}
-
-.admin-layout .cash-history-orders {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--c-text-secondary, var(--c-text-muted));
-    background: var(--c-surface-hover, rgba(0, 0, 0, 0.04));
-    border: 1px solid var(--c-border, rgba(0, 0, 0, 0.08));
-    border-radius: 999px;
-    padding: 2px 8px;
-    letter-spacing: 0.01em;
-}
-
-.admin-layout .cash-history-amounts {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(72px, 1fr));
-    gap: 12px;
+    gap: 14px;
     min-width: 0;
+    flex: 1;
 }
 
-.admin-layout .cash-history-col {
+.admin-layout .cash-history-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #eaf4ef;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-avatar,
+.dark .admin-layout .cash-history-avatar {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+}
+
+.admin-layout .cash-history-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
 }
 
-.admin-layout .cash-history-col label {
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: var(--c-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.admin-layout .cash-history-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.admin-layout .cash-history-col span {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--c-text);
-    font-variant-numeric: tabular-nums;
+.admin-layout .cash-history-day {
+    font-size: 0.94rem;
+    font-weight: 750;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-day,
+.dark .admin-layout .cash-history-day {
+    color: #f1f5f9;
+}
+
+.admin-layout .cash-history-orders-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 650;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 1px 7px;
+    border-radius: 9999px;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-orders-badge,
+.dark .admin-layout .cash-history-orders-badge {
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+}
+
+.admin-layout .cash-history-hours {
+    font-size: 0.76rem;
+    color: #64748b;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-.admin-layout .cash-history-col__income {
-    color: var(--c-success, #16a34a);
+[data-theme="dark"] .admin-layout .cash-history-hours,
+.dark .admin-layout .cash-history-hours {
+    color: #94a3b8;
 }
 
-.admin-layout .cash-history-col__delivery {
-    color: var(--admin-accent, var(--c-balance, #c2410c));
-}
-
-.admin-layout .cash-history-arrow {
-    color: var(--c-text-muted);
-    opacity: 0.4;
-    transition: opacity 0.2s ease;
+/* Right: Amount + Subtitle + Chevron */
+.admin-layout .cash-history-item-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex-shrink: 0;
+    text-align: right;
 }
 
-.admin-layout .cash-history-card:hover .cash-history-arrow {
+.admin-layout .cash-history-amount-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+}
+
+.admin-layout .cash-history-main-amount {
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-main-amount,
+.dark .admin-layout .cash-history-main-amount {
+    color: #ffffff;
+}
+
+.admin-layout .cash-history-sub-amount {
+    font-size: 0.74rem;
+    color: #64748b;
+    font-variant-numeric: tabular-nums;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-sub-amount,
+.dark .admin-layout .cash-history-sub-amount {
+    color: #94a3b8;
+}
+
+.admin-layout .cash-history-chevron {
+    color: #94a3b8;
+    opacity: 0.6;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.admin-layout .cash-history-card:hover .cash-history-chevron {
     opacity: 1;
-    color: var(--c-balance);
+    transform: translateX(2px);
+    color: #0f172a;
+}
+
+[data-theme="dark"] .admin-layout .cash-history-card:hover .cash-history-chevron,
+.dark .admin-layout .cash-history-card:hover .cash-history-chevron {
+    color: #ffffff;
 }
 
 /* --- History Loading & Empty --- */
@@ -1901,41 +2237,30 @@
         gap: 16px;
     }
 
-    .admin-layout .cash-header {
+    .admin-layout .cash-dribbble-hero {
+        padding: 14px 14px;
+        border-radius: 18px;
         gap: 12px;
     }
 
-    .admin-layout .cash-page-title {
-        font-size: 1.2rem;
-    }
-
-    .admin-layout .cash-header-actions {
+    .admin-layout .cash-dribbble-hero__actions {
         width: 100%;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
     }
 
-    .admin-layout .cash-container .cash-action-btn {
+    .admin-layout .cash-container .cash-dribbble-btn {
         width: 100%;
-        justify-content: center;
-        padding: 10px 12px;
-        font-size: 0.8rem;
-        margin-left: 0;
+        padding: 11px 14px !important;
+        font-size: 0.84rem !important;
     }
 
-    /* Cerrar al final del toolbar, no como CTA dominante del viewport */
-    .admin-layout .cash-container .cash-action-btn--close {
-        grid-column: 1 / -1;
-        order: 3;
-        margin-left: 0;
-    }
-
-    .admin-layout .cash-header-actions .btn-danger {
+    .admin-layout .cash-container .cash-dribbble-btn--close {
         grid-column: 1 / -1;
     }
 
-    .admin-layout .cash-header-actions .btn-open-shift {
+    .admin-layout .cash-container .cash-dribbble-btn--open {
         grid-column: 1 / -1;
     }
 
@@ -2006,29 +2331,13 @@
 
     /* History cards */
     .admin-layout .cash-history-card {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px;
-    }
-
-    .admin-layout .cash-history-date {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-        min-width: unset;
-        flex: none;
-        width: 100%;
-    }
-
-    .admin-layout .cash-history-amounts {
-        width: 100%;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 12px 14px;
         gap: 10px;
     }
 
-    .admin-layout .cash-history-arrow {
-        display: none;
+    .admin-layout .cash-history-avatar {
+        width: 38px;
+        height: 38px;
     }
 
     /* Empty state */
@@ -2044,13 +2353,20 @@
 
     /* Section header */
     .admin-layout .cash-section-header {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
         gap: 8px;
+        width: 100%;
+    }
+
+    .admin-layout .cash-filters-inline {
+        margin-left: auto;
+        flex-shrink: 0;
     }
 
     .admin-layout .cash-filters-inline select {
-        width: 100%;
+        width: auto;
     }
 
     /* Modal responsive — cash-dialog a pantalla completa */
@@ -2158,19 +2474,6 @@
 
     .admin-layout .cash-methods-metrics {
         grid-template-columns: 1fr;
-    }
-
-    .admin-layout .cash-history-amounts {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-
-    .admin-layout .cash-history-col {
-        flex-direction: row;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 8px;
-        min-width: 0;
     }
 }
 
