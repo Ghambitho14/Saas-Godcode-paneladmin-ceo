@@ -11,6 +11,13 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  const vibrate = (ms: number) => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(ms);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -24,6 +31,7 @@ export function LoginForm() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    vibrate(20); // Medium haptic on submit
     if (loading) return;
     setError(null);
     setLoading(true);
@@ -47,7 +55,6 @@ export function LoginForm() {
       ) : null}
 
       <div className="form-group">
-        <label>Correo Electrónico</label>
         <div className="input-with-icon">
           <Mail size={18} className="input-icon" />
           <input
@@ -56,14 +63,13 @@ export function LoginForm() {
             autoComplete="username"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="admin@godcode.me"
+            placeholder="Correo electrónico"
             required
           />
         </div>
       </div>
 
       <div className="form-group">
-        <label>Contraseña</label>
         <div className="input-with-icon">
           <Lock size={18} className="input-icon" />
           <input
@@ -72,7 +78,7 @@ export function LoginForm() {
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="••••••••"
+            placeholder="Contraseña"
             required
           />
           <Button
@@ -88,7 +94,22 @@ export function LoginForm() {
         </div>
       </div>
 
-      <Button variant="default" type="submit" className="login-submit-button btn-primary" disabled={loading}>
+      {/* Remember me + Forgot password row */}
+      <div className="login-extras-row">
+        <label className="login-remember">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+          />
+          <span>Recordarme</span>
+        </label>
+        <button type="button" className="login-forgot-link">
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <button type="submit" className="login-submit-btn" disabled={loading}>
         {loading ? (
           <>
             <Loader2 size={20} className="animate-spin" />
@@ -97,7 +118,7 @@ export function LoginForm() {
         ) : (
           <span>Ingresar</span>
         )}
-      </Button>
+      </button>
     </form>
   );
 }

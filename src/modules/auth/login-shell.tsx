@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { LoginForm } from "./login-form";
 import { resetDocumentMeta } from "@/shared/utils/documentMeta";
-import { Button } from "@/components/ui/button";
 
 interface LoginShellProps {
   displayName: string;
@@ -9,117 +8,99 @@ interface LoginShellProps {
 
 type AccessMode = "caja" | "admin";
 
-export function LoginShell({ displayName }: LoginShellProps) {
+export function LoginShell({ }: LoginShellProps) {
   const [accessMode, setAccessMode] = useState<AccessMode>("caja");
-  const [introDone, setIntroDone] = useState(false);
+
+  const handleTabChange = (mode: AccessMode) => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10); // Light haptic feedback
+    }
+    setAccessMode(mode);
+  };
 
   useEffect(() => {
     resetDocumentMeta();
   }, []);
 
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) {
-      setIntroDone(true);
-      return;
-    }
-    const timer = window.setTimeout(() => setIntroDone(true), 2000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  const panelCopy =
-    accessMode === "caja"
-      ? {
-          heading: "¿Administración?",
-          line: "Configura el local, reportes y permisos avanzados.",
-          action: "admin" as const,
-          buttonLabel: "Acceso admin",
-        }
-      : {
-          heading: "¿Operación de caja?",
-          line: "Cobros, turnos y uso diario del panel en este equipo.",
-          action: "caja" as const,
-          buttonLabel: "Acceso caja",
-        };
-
   return (
-    <main className="login-shell login-shell--split" data-mode={accessMode}>
-      <div className="login-slide-card glass animate-fade" data-mode={accessMode}>
-        <h1 className="login-slide-brand">{displayName}</h1>
+    <main className="login-shell" data-mode={accessMode}>
+      {/* SVG Coral Organic Waves – large, sharp blobs */}
+      <div className="login-waves" aria-hidden="true">
+        <svg className="login-wave login-wave--top" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path d="M260 0C260 0 310 80 380 140C430 185 500 220 500 220V0H260Z" fill="#FF6452"/>
+          <path d="M360 0C360 0 400 60 440 100C470 130 500 155 500 155V0H360Z" fill="#FF7866" fillOpacity="0.5"/>
+          <path d="M180 0C200 30 250 100 320 150C400 210 460 280 500 350V260C480 200 440 140 380 100C320 60 280 30 260 0H180Z" fill="#FF6452" fillOpacity="0.7"/>
+        </svg>
+        <svg className="login-wave login-wave--bottom" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path d="M0 280C0 280 70 200 140 180C210 160 250 200 240 280C230 360 200 420 160 460C120 500 0 500 0 500V280Z" fill="#FF6452"/>
+          <path d="M0 360C0 360 50 300 100 290C150 280 180 310 170 360C160 410 130 450 100 470C70 490 0 500 0 500V360Z" fill="#FF7866" fillOpacity="0.5"/>
+        </svg>
+      </div>
 
-        <div className="login-slide-forms" aria-live="polite">
-          <div className="login-form-plate">
-            <header className="login-slide-form-header">
-              <h2 className="login-slide-title">
-                {accessMode === "caja" ? "Acceso caja" : "Acceso admin"}
-              </h2>
-              <p className="login-slide-subtitle">
-                {accessMode === "caja"
-                  ? "Ingresa con tu cuenta para operar caja en este local."
-                  : "Continúa en el portal web de GodCode para acceder al panel de administración."}
-              </p>
-            </header>
-            <div className="login-slide-actions">
-              {accessMode === "caja" ? (
-                <LoginForm />
-              ) : (
-                <p className="login-admin-external-wrap">
-                  <a
-                    className="login-submit-button login-admin-external-link"
-                    href="https://www.godcode.me/login"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Acceso GodCode (web)
-                  </a>
-                </p>
-              )}
-            </div>
-            <p className="login-slide-help">
-              ¿Problemas para ingresar? Contacta al administrador de la empresa.
-            </p>
-          </div>
+      {/* Logo – no circle wrapper, just the image */}
+      <div className="login-logo-wrap" aria-hidden="true">
+        <img src="/gcode-hero-logo-v3.png" alt="" className="login-logo" />
+      </div>
+
+      {/* Title & subtitle */}
+      <h1 className="login-title">¡Bienvenido de nuevo!</h1>
+      <p className="login-subtitle">
+        {accessMode === "caja" ? (
+          <>
+            Ingresa a <strong className="login-highlight">GCode</strong> para comenzar tu turno y gestionar las ventas del día.
+          </>
+        ) : (
+          <>
+            Accede a la administración web de <strong className="login-highlight">GCode</strong> para configurar tu negocio.
+          </>
+        )}
+      </p>
+
+      {/* Form card */}
+      <div className="login-card-wrap">
+        {/* Tabs: Login / Acceso Admin */}
+        <div className="login-tabs">
+          <button
+            type="button"
+            className={`login-tab${accessMode === "caja" ? " login-tab--active" : ""}`}
+            onClick={() => handleTabChange("caja")}
+          >
+            Iniciar sesión
+          </button>
+          <button
+            type="button"
+            className={`login-tab${accessMode === "admin" ? " login-tab--active" : ""}`}
+            onClick={() => handleTabChange("admin")}
+          >
+            Acceso Admin
+          </button>
         </div>
 
-        <aside className="login-sliding-panel" aria-label="Cambiar tipo de acceso">
-          <div className="login-sliding-panel__inner">
-            <div
-              className={`login-sliding-panel__deco${accessMode === "caja" && introDone ? " login-sliding-panel__deco--logo" : ""}`}
-              aria-hidden="true"
-            >
-              {accessMode === "caja" ? (
-                <>
-                  <img
-                    src="/Gcode-login.svg"
-                    alt=""
-                    className="login-sliding-panel__deco-img login-sliding-panel__deco-img--intro"
-                  />
-                  <img
-                    src="/Gcode-mark.svg"
-                    alt=""
-                    className="login-sliding-panel__deco-img login-sliding-panel__deco-img--mark"
-                  />
-                </>
-              ) : (
-                <img
-                  src="/favicon.png"
-                  alt=""
-                  className="login-sliding-panel__deco-img login-sliding-panel__deco-img--brand"
-                />
-              )}
+        {/* Form body */}
+        <div className="login-card-body">
+          {accessMode === "caja" ? (
+            <LoginForm />
+          ) : (
+            <div className="login-admin-body">
+              <p className="login-admin-text">
+                Accede al portal de administración para configurar tu empresa, gestionar reportes y permisos avanzados.
+              </p>
+              <a
+                className="login-submit-btn"
+                href="https://www.godcode.me/login"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Acceso GCode (web)
+              </a>
             </div>
-            <h3 className="login-sliding-panel__title">{panelCopy.heading}</h3>
-            <p className="login-sliding-panel__text">{panelCopy.line}</p>
-            <Button variant="default"
-              type="button"
-              className="login-sliding-panel__btn"
-              onClick={() => setAccessMode(panelCopy.action)}
-            >
-              {panelCopy.buttonLabel}
-            </Button>
-          </div>
-        </aside>
+          )}
+        </div>
       </div>
+
+      <p className="login-help">
+        ¿Problemas para ingresar? Contacta al administrador de la empresa.
+      </p>
     </main>
   );
 }

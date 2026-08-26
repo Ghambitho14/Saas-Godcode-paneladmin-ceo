@@ -54,7 +54,7 @@ html.pwa-standalone {
 	}
 }
 
-html.pwa-standalone .login-shell.login-shell--split {
+html.pwa-standalone .login-shell {
 	padding-top: max(20px, var(--pwa-safe-top));
 	padding-left: max(20px, var(--pwa-safe-left));
 	padding-right: max(20px, var(--pwa-safe-right));
