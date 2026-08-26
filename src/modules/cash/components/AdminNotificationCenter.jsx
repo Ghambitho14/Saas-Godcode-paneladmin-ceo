@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell, AlertTriangle, Package, Megaphone, ChevronRight, CheckCircle2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { openHeaderPopover, listenHeaderPopoverOpen } from "../utils/headerPopoverEvents";
+
+function getPopoverPortalParent() {
+	if (typeof document === "undefined") return null;
+	return document.querySelector(".admin-layout") || document.body;
+}
 
 /**
  * Campana del header: comunicados SaaS + alertas de inventario (stock bajo/agotado, productos pausados por stock).
@@ -24,15 +30,38 @@ export default function AdminNotificationCenter({
 	const [popoverPos, setPopoverPos] = useState(null);
 	const rootRef = useRef(null);
 	const triggerRef = useRef(null);
+	const popoverRef = useRef(null);
 
 	const updatePopoverPos = useCallback(() => {
 		if (typeof window === 'undefined') return;
-		const cluster = document.querySelector('.header-actions-cluster');
-		const fallback = document.querySelector('.header-actions');
-		const ref = cluster && cluster.getBoundingClientRect().height > 0 ? cluster : fallback;
-		if (!ref) return;
-		const r = ref.getBoundingClientRect();
-		setPopoverPos({ top: r.bottom + 10 });
+		const trigger = triggerRef.current;
+		if (!trigger) return;
+		const r = trigger.getBoundingClientRect();
+		const vv = window.visualViewport;
+		const viewportWidth = vv?.width ?? window.innerWidth;
+		const offsetLeft = vv?.offsetLeft ?? 0;
+		const isMobile = viewportWidth <= 1024;
+		if (isMobile) {
+			const top = Math.max(54, r.bottom + 8);
+			setPopoverPos({
+				top,
+				left: 12,
+				right: 12,
+				maxWidth: 400,
+				width: 'auto',
+				margin: '0 auto',
+			});
+		} else {
+			const right = Math.max(16, viewportWidth + offsetLeft - r.right);
+			setPopoverPos({
+				top: r.bottom + 10,
+				right,
+				left: 'auto',
+				width: 380,
+				maxWidth: 400,
+				margin: 0,
+			});
+		}
 	}, []);
 
 	const pausedByStock = useMemo(
@@ -88,7 +117,12 @@ export default function AdminNotificationCenter({
 	useEffect(() => {
 		if (!open) return;
 		const onDoc = (e) => {
-			if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+			if (
+				rootRef.current && !rootRef.current.contains(e.target) &&
+				(!popoverRef.current || !popoverRef.current.contains(e.target))
+			) {
+				setOpen(false);
+			}
 		};
 		document.addEventListener("mousedown", onDoc);
 		return () => document.removeEventListener("mousedown", onDoc);
@@ -141,28 +175,30 @@ export default function AdminNotificationCenter({
 				) : null}
 			</Button>
 
-			{open ? (
-				<div
-					className="admin-notification-center__popover"
-					role="dialog"
-					aria-labelledby="admin-notification-center-title"
-					style={popoverPos ? { top: popoverPos.top, left: '50%', transform: 'translateX(-50%)' } : undefined}
-				>
-					<header className="admin-notification-center__head">
-						<h2 className="admin-notification-center__title" id="admin-notification-center-title">
-							Notificaciones
-						</h2>
-						{branchLabel ? (
-							<p className="admin-notification-center__sub">
-								<MapPin size={12} strokeWidth={2} className="admin-notification-center__sub-icon" aria-hidden />
-								<span>{branchLabel}</span>
-							</p>
-						) : (
-							<p className="admin-notification-center__sub admin-notification-center__sub--all-branches">
-								Vista general · elige sucursal para alertas de stock
-							</p>
-						)}
-					</header>
+			{open && typeof document !== 'undefined'
+				? createPortal(
+						<div
+							ref={popoverRef}
+							className="admin-notification-center__popover"
+							role="dialog"
+							aria-labelledby="admin-notification-center-title"
+							style={popoverPos || undefined}
+						>
+							<header className="admin-notification-center__head">
+								<h2 className="admin-notification-center__title" id="admin-notification-center-title">
+									Notificaciones
+								</h2>
+								{branchLabel ? (
+									<p className="admin-notification-center__sub">
+										<MapPin size={12} strokeWidth={2} className="admin-notification-center__sub-icon" aria-hidden />
+										<span>{branchLabel}</span>
+									</p>
+								) : (
+									<p className="admin-notification-center__sub admin-notification-center__sub--all-branches">
+										Vista general · elige sucursal para alertas de stock
+									</p>
+								)}
+							</header>
 
 					<div className="admin-notification-center__scroll">
 						<section className="admin-notification-center__panel" aria-labelledby="notif-section-inventory">
@@ -299,7 +335,8 @@ export default function AdminNotificationCenter({
 							</div>
 						</section>
 					</div>
-				</div>
+				</div>,
+				getPopoverPortalParent()
 			) : null}
 		</div>
 	);

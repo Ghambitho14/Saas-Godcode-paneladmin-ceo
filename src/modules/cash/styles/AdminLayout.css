@@ -1322,22 +1322,6 @@
 		min-width: 0;
 	}
 
-	/*
-	 * Popover: en escritorio la campana va a la derecha → right:0 (regla global).
-	 * En ≤1024px centrar horizontalmente bajo el header y limitar ancho al viewport + safe area.
-	 */
-	.admin-layout .header-actions--mobile-toolbar .header-actions-toolbar-row .admin-notification-center__popover {
-		left: 50% !important;
-		right: auto !important;
-		transform: translateX(-50%) !important;
-		width: min(
-			400px,
-			calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 24px)
-		);
-		max-width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 16px);
-		box-sizing: border-box;
-	}
-
 	/* Selector sucursal en toolbar: compacto para caber junto al reloj */
 	.admin-layout .header-actions--mobile-toolbar .header-action-branch .admin-branch-select__trigger {
 		font-size: clamp(0.68rem, 1.75vw + 0.38rem, 0.8rem);
@@ -2133,20 +2117,5 @@
 	flex-shrink: 0;
 	width: 13px;
 	height: 13px;
-}
-
-@media (max-width: 1024px) {
-	/* Popover sonido: centrar horizontalmente bajo el header en mobile */
-	.admin-layout .header-actions--mobile-toolbar .header-actions-toolbar-row .order-sound-control__popover {
-		left: 50% !important;
-		right: auto !important;
-		transform: translateX(-50%) !important;
-		width: min(
-			380px,
-			calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 16px)
-		);
-		max-width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 16px);
-		box-sizing: border-box;
-	}
 }
 
