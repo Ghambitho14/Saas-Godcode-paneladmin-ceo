@@ -1419,7 +1419,17 @@ export function getOrderItemLineTotal(item) {
 		item?.has_discount && item?.discount_price != null && Number(item.discount_price) > 0
 			? Number(item.discount_price)
 			: Number(item?.price) || 0;
-	return unit * Math.max(1, Number(item?.quantity) || 1);
+	
+	let extrasTotal = 0;
+	if (Array.isArray(item?.extras)) {
+		for (const extra of item.extras) {
+			const extraPrice = Number(extra?.price) || 0;
+			const extraQty = Number(extra?.quantity) || 1;
+			extrasTotal += extraPrice * extraQty;
+		}
+	}
+	
+	return (unit + extrasTotal) * Math.max(1, Number(item?.quantity) || 1);
 }
 
 function computeOrderItemsSubtotal(items) {

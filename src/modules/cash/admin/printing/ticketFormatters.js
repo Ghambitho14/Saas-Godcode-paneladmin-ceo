@@ -11,6 +11,7 @@ import {
 	isOrderPaymentDeferred,
 	isLegacyGlobalKitchenNote,
 	resolveItemKitchenNote,
+	getOrderItemLineTotal,
 } from '@/shared/utils/orderUtils';
 
 export function orderCurrency(order) {
@@ -217,20 +218,7 @@ export function summarizeAmounts(order) {
 	const items = order?.items || [];
 	let itemsSubtotal = 0;
 	for (const it of items) {
-		const price = (it.has_discount && it.discount_price > 0)
-			? Number(it.discount_price)
-			: Number(it.price);
-		if (!Number.isFinite(price)) continue;
-		itemsSubtotal += price * (Number(it.quantity) || 1);
-
-		// Agregar precio de extras
-		if (Array.isArray(it.extras) && it.extras.length > 0) {
-			for (const extra of it.extras) {
-				const extraPrice = Number(extra.price) || 0;
-				if (!Number.isFinite(extraPrice)) continue;
-				itemsSubtotal += extraPrice * (Number(extra.quantity) || 1);
-			}
-		}
+		itemsSubtotal += getOrderItemLineTotal(it);
 	}
 	const deliveryFee = Number(order?.delivery_fee);
 	const fee = Number.isFinite(deliveryFee) && deliveryFee > 0 ? deliveryFee : 0;

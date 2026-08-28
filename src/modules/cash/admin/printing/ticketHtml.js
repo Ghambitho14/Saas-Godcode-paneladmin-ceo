@@ -240,7 +240,7 @@ export function buildTicketHtml(order, branchName, logoUrl, variant, printOption
 			extrasHtml = item.extras.map((extra) => {
 				const extraQty = Number(extra.quantity) || 1;
 				const extraPrice = Number(extra.price) || 0;
-				const extraLineTotal = extraPrice * extraQty;
+				const extraLineTotal = extraPrice * extraQty * safeQuantity;
 				const extraName = escapeHtml(String(extra.name || 'Extra').toUpperCase());
 				return `
 			<div class="c-item c-item-extra">

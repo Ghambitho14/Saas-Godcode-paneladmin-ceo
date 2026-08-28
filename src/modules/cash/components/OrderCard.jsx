@@ -26,6 +26,7 @@ import {
     resolveItemKitchenNote,
     ORDERS_PANEL_SELECT,
     sanitizeOrder,
+    getOrderItemLineTotal,
 } from '@/shared/utils/orderUtils';
 import { isOpenOrderSessionStatus } from '@/modules/cash/hooks/manual-order/manualOrderShared';
 import { printOrderTicket } from '@/modules/cash/admin/utils/receiptPrinting';
@@ -58,7 +59,12 @@ const OrderCard = ({
         [orderMoney],
     );
     const formatLinePrice = useCallback(
-        (item) => formatMoney(Number(item.total ?? item.subtotal ?? (item.price || 0) * (item.quantity ?? 1)) || 0),
+        (item) => {
+            if (item.total != null || item.subtotal != null) {
+                return formatMoney(Number(item.total ?? item.subtotal));
+            }
+            return formatMoney(getOrderItemLineTotal(item));
+        },
         [formatMoney],
     );
     const liveOrder = useMemo(
