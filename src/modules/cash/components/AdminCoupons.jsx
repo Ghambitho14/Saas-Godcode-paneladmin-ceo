@@ -14,7 +14,7 @@ const emptyDraft = () => ({
 	code: "",
 	discount_type: "percent",
 	discount_value: "10",
-	scope: "global",
+	scope: "all",
 	restricted_client_id: "",
 	min_order_subtotal: "0",
 	max_redemptions: "",
@@ -123,7 +123,7 @@ export default function AdminCoupons({ showNotify, companyId, clients = [] }) {
 			code: String(row.code ?? ""),
 			discount_type: row.discount_type === "fixed_amount" ? "fixed_amount" : "percent",
 			discount_value: String(Number(row.discount_value ?? 0)),
-			scope: row.scope === "client_only" ? "client_only" : "global",
+			scope: row.scope === "client_only" ? "client_only" : "all",
 			restricted_client_id: row.restricted_client_id ? String(row.restricted_client_id) : "",
 			min_order_subtotal: String(Number(row.min_order_subtotal ?? 0)),
 			max_redemptions:
@@ -140,7 +140,7 @@ export default function AdminCoupons({ showNotify, companyId, clients = [] }) {
 	const buildPayload = () => {
 		const code = normalizeCouponCode(draft.code);
 		const dv = Number(draft.discount_value);
-		const scope = draft.scope === "client_only" ? "client_only" : "global";
+		const scope = draft.scope === "client_only" ? "client_only" : "all";
 		const restricted = scope === "client_only" ? String(draft.restricted_client_id || "").trim() : null;
 		if (!code) throw new Error("El código es obligatorio.");
 		if (!Number.isFinite(dv) || dv < 0) throw new Error("El valor del descuento no es válido.");
@@ -247,7 +247,7 @@ export default function AdminCoupons({ showNotify, companyId, clients = [] }) {
 			const scope =
 				row.scope === "client_only" && row.restricted_client_id
 					? clientLabel(row.restricted_client_id).toLowerCase()
-					: "global";
+					: "all";
 			return code.includes(q) || dsc.includes(q) || scope.includes(q);
 		});
 	}, [rows, searchTerm, statusFilter, clientLabel]);
@@ -386,7 +386,7 @@ export default function AdminCoupons({ showNotify, companyId, clients = [] }) {
 											}))
 										}
 										options={[
-											{ value: "global", label: "Todos los clientes" },
+											{ value: "all", label: "Todos los clientes" },
 											{ value: "client_only", label: "Solo un cliente" },
 										]}
 									/>
