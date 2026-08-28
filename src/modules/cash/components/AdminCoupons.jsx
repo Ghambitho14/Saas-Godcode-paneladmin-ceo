@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Tag, Plus, Loader2, Pencil, Ban, CircleCheck, Search, RefreshCw, X } from "lucide-react";
+import { Tag, Plus, Loader2, Pencil, Ban, CircleCheck, Search, RefreshCw, X, Trash2 } from "lucide-react";
 import { supabase, TABLES } from "@/integrations/supabase";
 import { useBranchMoney } from "@/modules/cash/hooks/useBranchMoney";
 import { normalizeCouponCode } from "@/lib/discount-coupon";
@@ -218,6 +218,25 @@ export default function AdminCoupons({ showNotify, companyId, clients = [] }) {
 			await load();
 		} catch (e) {
 			showNotify?.(e.message || "Error al actualizar", "error");
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const deleteCoupon = async (row) => {
+		if (!row?.id) return;
+		if (!window.confirm(`¿Estás seguro de que deseas eliminar el cupón "${row.code}"?`)) return;
+		setSaving(true);
+		try {
+			const { error } = await supabase
+				.from(TABLES.discount_coupons)
+				.delete()
+				.eq("id", row.id);
+			if (error) throw error;
+			showNotify?.("Cupón eliminado exitosamente.");
+			await load();
+		} catch (e) {
+			showNotify?.(e.message || "Error al eliminar el cupón", "error");
 		} finally {
 			setSaving(false);
 		}
@@ -711,6 +730,15 @@ export default function AdminCoupons({ showNotify, companyId, clients = [] }) {
 													) : (
 														<CircleCheck size={14} aria-hidden />
 													)}
+												</button>
+												<button
+													type="button"
+													className="admin-icon-btn admin-icon-btn--sm"
+													title="Eliminar"
+													disabled={saving}
+													onClick={() => void deleteCoupon(row)}
+												>
+													<Trash2 size={14} className="text-red-500" aria-hidden />
 												</button>
 											</td>
 										</tr>
