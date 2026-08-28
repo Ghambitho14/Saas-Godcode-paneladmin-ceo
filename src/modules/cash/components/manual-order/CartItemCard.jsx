@@ -4,6 +4,7 @@ import { useOrderMoney } from '@/modules/cash/hooks/useOrderMoney';
 import { Button } from "@/components/ui/button";
 import { cn } from '@/lib/utils';
 import { textScale } from './manualOrderStyles';
+import { getOrderItemLineTotal } from '@/shared/utils/orderUtils';
 
 const CartItemCard = ({
     item,
@@ -20,7 +21,7 @@ const CartItemCard = ({
 	const formatMoney = formatMoneyOverride ?? fallbackFormatMoney;
     const hasDiscount = Boolean(item.has_discount) && item.discount_price != null && Number(item.discount_price) > 0;
     const unit = hasDiscount ? Number(item.discount_price) : Number(item.price);
-    const subtotal = unit * Number(item.quantity || 1);
+    const subtotal = getOrderItemLineTotal(item);
     const noteOpen = !readOnly && isItemNoteOpen?.(item);
 	const noteText = String(item.note ?? '').trim();
 	const controlSize = compact ? 'h-9 w-9 min-h-9 min-w-9' : 'min-h-[40px] min-w-[40px] h-10 w-10';

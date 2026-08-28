@@ -59,12 +59,7 @@ const OrderCard = ({
         [orderMoney],
     );
     const formatLinePrice = useCallback(
-        (item) => {
-            if (item.total != null || item.subtotal != null) {
-                return formatMoney(Number(item.total ?? item.subtotal));
-            }
-            return formatMoney(getOrderItemLineTotal(item));
-        },
+        (item) => formatMoney(getOrderItemLineTotal(item)),
         [formatMoney],
     );
     const liveOrder = useMemo(
