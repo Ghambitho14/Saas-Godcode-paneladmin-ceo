@@ -214,43 +214,32 @@
     box-sizing: border-box;
 }
 
-/* Vista una etapa a pantalla completa: masonry vertical con lectura horizontal.
-   El componente reordena las cards para que, aunque el layout sea column-count,
-   se lean por filas (1,2,3…). column-count fijo sincronizado con JS. */
+/*
+ * Vista una etapa a pantalla completa: cuadrícula de fichas.
+ *
+ * Se usa CSS grid y NO `column-count`. Multicol dentro de un contenedor de
+ * altura definida (aquí .column-body la hereda del tablero) fragmenta el
+ * contenido en columnas *horizontales*: las fichas que no caben en el ancho se
+ * pintan fuera del borde derecho y `overflow-x: hidden` las recorta, así que
+ * con 14 pedidos solo se veían los 4-5 primeros y el scroll vertical no hacía
+ * nada. Además `column-fill: balance` metía todas las fichas en la primera
+ * columna cuando cabían de alto, dejando la mitad derecha vacía.
+ *
+ * Con grid el desbordamiento es vertical (scroll normal) y el orden de lectura
+ * ya es por filas, sin necesidad de reordenar las cards desde JS.
+ */
 .admin-layout .kanban-board.kanban-board--focus-desktop .column-body {
-    display: block;
-    column-count: 1;
-    column-gap: 16px;
-    column-fill: balance;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    align-content: start;
+    gap: 16px;
     padding: 8px;
 }
 
-@media (min-width: 940px) {
-    .admin-layout .kanban-board.kanban-board--focus-desktop .column-body {
-        column-count: 2;
-    }
-}
-
-@media (min-width: 1240px) {
-    .admin-layout .kanban-board.kanban-board--focus-desktop .column-body {
-        column-count: 3;
-    }
-}
-
-@media (min-width: 1540px) {
-    .admin-layout .kanban-board.kanban-board--focus-desktop .column-body {
-        column-count: 4;
-    }
-}
-
 .admin-layout .kanban-board.kanban-board--focus-desktop .column-body > .kanban-card {
-    display: inline-block;
     width: 100%;
     max-width: 100%;
-    break-inside: avoid;
-    margin-bottom: 16px;
-    vertical-align: top;
-    align-self: flex-start;
+    align-self: start;
     height: auto;
     contain: layout;
 }
@@ -258,22 +247,14 @@
 /* Ajustes de separación y padding en pantallas grandes */
 @media (min-width: 1321px) {
     .admin-layout .kanban-board.kanban-board--focus-desktop .column-body {
-        column-gap: 18px;
+        gap: 18px;
         padding: 10px 12px;
-    }
-
-    .admin-layout .kanban-board.kanban-board--focus-desktop .column-body > .kanban-card {
-        margin-bottom: 18px;
     }
 }
 
 @media (min-width: 1600px) {
     .admin-layout .kanban-board.kanban-board--focus-desktop .column-body {
-        column-gap: 20px;
-    }
-
-    .admin-layout .kanban-board.kanban-board--focus-desktop .column-body > .kanban-card {
-        margin-bottom: 20px;
+        gap: 20px;
     }
 }
 
@@ -297,23 +278,18 @@
 }
 
 /*
- * Estado vacío en vista una columna: desactivar column-count.
- * Con varias columnas CSS el .empty-zone se fragmentaba y parecían
- * varias cards grises ("Sin pedidos" en una sola).
+ * Estado vacío en vista una columna: una sola zona a lo ancho del tablero,
+ * no una celda de la cuadrícula.
  */
 .admin-layout .kanban-board.kanban-board--focus-desktop .column-body.column-body--empty {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    column-count: auto;
-    column-gap: normal;
-    column-fill: auto;
 }
 
 .admin-layout .kanban-board.kanban-board--focus-desktop .empty-zone {
     width: 100%;
     max-width: 100%;
-    break-inside: avoid;
     flex: 1;
     min-height: 200px;
 }

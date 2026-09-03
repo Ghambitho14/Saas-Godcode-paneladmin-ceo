@@ -22,7 +22,7 @@ import { useAdminCatalog } from '../hooks/useAdminCatalog';
 import { readStoredBranchId } from '../hooks/ordersPanelSettingsStorage';
 import { resolvePanelDataScope } from '../orders/panelDataScopes';
 import { invalidateBranchOrders } from '../../services/panelDataCache';
-import { ADMIN_MOBILE_MQ } from '../../constants/responsive';
+import { ADMIN_SHELL_COMPACT_MQ } from '../../constants/responsive';
 import { OrderMoneyProvider } from '../../context/OrderMoneyContext';
 import { clearManualOrderDraftsForUser } from '../../services/manualOrderDrafts';
 import { installPaymentEvidenceOnlineRetry, queuePaymentEvidence, uploadQueuedPaymentEvidence } from '../../services/paymentEvidenceOutbox';
@@ -304,7 +304,7 @@ export const AdminProvider = ({
 	const editingProductRef = useRef(/** @type {unknown} */ (null));
 	const [isMobile, setIsMobile] = useState(() => {
 		if (typeof window === 'undefined') return false;
-		return window.matchMedia(ADMIN_MOBILE_MQ).matches;
+		return window.matchMedia(ADMIN_SHELL_COMPACT_MQ).matches;
 	});
 	const [selectedClient, setSelectedClient] = useState(null);
 	const [selectedClientOrders, setSelectedClientOrders] = useState([]);
@@ -476,7 +476,7 @@ export const AdminProvider = ({
 	}, [activeTab, companyId, userRole]);
 
 	useEffect(() => {
-		const mq = window.matchMedia(ADMIN_MOBILE_MQ);
+		const mq = window.matchMedia(ADMIN_SHELL_COMPACT_MQ);
 		const sync = () => setIsMobile(mq.matches);
 		sync();
 		mq.addEventListener('change', sync);

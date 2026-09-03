@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Columns3, Maximize2 } from 'lucide-react';
 import AdminIconSlot from './AdminIconSlot';
 import OrderCard from './OrderCard';
@@ -6,50 +6,24 @@ import { Button } from "@/components/ui/button";
 
 const KANBAN_VIEW_STORAGE_KEY = 'tenant-admin-kanban-view';
 
-/** Reordena un array para que, al renderizarse con CSS column-count,
- * la lectura sea horizontal (por filas) en lugar de vertical (por columnas).
- *  Items: [1,2,3,4,5,6], cols: 3  →  [1,4,2,5,3,6]
- *  Visual result:
- *    1  2  3
- *    4  5  6 */
-function reorderForHorizontalColumns(items, columnCount) {
-    if (!items || columnCount <= 1) return items;
-    const cols = Array.from({ length: columnCount }, () => []);
-    items.forEach((item, i) => {
-        cols[i % columnCount].push(item);
-    });
-    return cols.flat();
+/** Vista guardada, leida de forma sincrona: la app es 100% cliente (createRoot,
+ *  sin SSR ni hidratacion), asi que el primer render ya puede pintar el layout
+ *  definitivo. Leerla desde un efecto hacia que el tablero pintase primero como
+ *  tres columnas y saltase a una columna en el tick siguiente. */
+function readStoredKanbanView() {
+    if (typeof window === 'undefined') return 'split';
+    try {
+        const v = localStorage.getItem(KANBAN_VIEW_STORAGE_KEY);
+        return v === 'single' || v === 'split' ? v : 'split';
+    } catch {
+        return 'split';
+    }
 }
 
 const AdminKanban = ({ columns, isMobile, mobileTab, setMobileTab, moveOrder, setReceiptModalOrder, branch, clients, logoUrl, companyName, showNotify, products, categories, onOrderSaved, localOrderChannels = null }) => {
 
-    const [mounted, setMounted] = useState(false);
     /** 'split' = tres columnas; 'single' = una etapa a pantalla completa (solo escritorio; móvil sigue en pestañas) */
-    const [kanbanViewMode, setKanbanViewModeState] = useState('split');
-    const [focusColumnCount, setFocusColumnCount] = useState(() => {
-        if (typeof window === 'undefined') return 1;
-        if (window.matchMedia('(min-width: 1540px)').matches) return 4;
-        if (window.matchMedia('(min-width: 1240px)').matches) return 3;
-        if (window.matchMedia('(min-width: 940px)').matches) return 2;
-        return 1;
-    });
-    const focusBodyRef = useRef(null);
-
-    useEffect(() => {
-        const t = setTimeout(() => setMounted(true), 0);
-        return () => clearTimeout(t);
-    }, []);
-
-    useEffect(() => {
-        try {
-            const v = localStorage.getItem(KANBAN_VIEW_STORAGE_KEY);
-            if (v === 'single' || v === 'split') {
-                queueMicrotask(() => setKanbanViewModeState(v));
-            }
-        } catch {
-            /* ignore */
-        }
-    }, []);
+    const [kanbanViewMode, setKanbanViewModeState] = useState(readStoredKanbanView);
 
     const setKanbanViewMode = useCallback((mode) => {
         setKanbanViewModeState(mode);
@@ -86,36 +60,10 @@ const AdminKanban = ({ columns, isMobile, mobileTab, setMobileTab, moveOrder, se
         }
     ], []);
 
-    const showDesktopSingle = mounted && !isMobile && kanbanViewMode === 'single';
-    const showDesktopSplit = mounted && !isMobile && kanbanViewMode === 'split';
-
-    /* En modo focus leemos directamente cuántas columnas está pintando CSS
-       (getComputedStyle columnCount) para reordenar las cards y que la
-       numeración se lea horizontalmente. Así nunca hay desfase con el layout. */
-    useEffect(() => {
-        if (!showDesktopSingle || typeof window === 'undefined') return;
-
-        const updateCount = () => {
-            const el = focusBodyRef.current;
-            if (!el) return;
-            const style = window.getComputedStyle(el);
-            const raw = style.columnCount || style.columns || '1';
-            const count = parseInt(raw, 10);
-            setFocusColumnCount(Number.isFinite(count) && count > 0 ? count : 1);
-        };
-
-        updateCount();
-        const ro = new ResizeObserver(updateCount);
-        if (focusBodyRef.current) ro.observe(focusBodyRef.current);
-        window.addEventListener('resize', updateCount);
-        return () => {
-            ro.disconnect();
-            window.removeEventListener('resize', updateCount);
-        };
-    }, [showDesktopSingle]);
+    const showDesktopSingle = !isMobile && kanbanViewMode === 'single';
+    const showDesktopSplit = !isMobile && kanbanViewMode === 'split';
 
     const isColumnHidden = (colId) => {
-        if (!mounted) return false;
         if (isMobile && mobileTab !== colId) return true;
         if (showDesktopSingle && mobileTab !== colId) return true;
         return false;
@@ -175,12 +123,11 @@ const AdminKanban = ({ columns, isMobile, mobileTab, setMobileTab, moveOrder, se
             >
                 {columnConfig.map((col) => {
                     const rawList = columns[col.id] || [];
-                    const sortedList = showDesktopSingle
+                    /* En vista una etapa las fichas van en una cuadrícula que se lee
+                       por filas, así que el orden del DOM ya es el orden de cola. */
+                    const ordersInColumn = showDesktopSingle
                         ? [...rawList].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
                         : rawList;
-                    const ordersInColumn = showDesktopSingle
-                        ? reorderForHorizontalColumns(sortedList, focusColumnCount)
-                        : sortedList;
                     const hidden = isColumnHidden(col.id);
 
                     return (
@@ -201,7 +148,6 @@ const AdminKanban = ({ columns, isMobile, mobileTab, setMobileTab, moveOrder, se
                                     'column-body',
                                     ordersInColumn.length === 0 ? 'column-body--empty' : '',
                                 ].filter(Boolean).join(' ')}
-                                ref={showDesktopSingle && !hidden ? focusBodyRef : null}
                             >
                                 {ordersInColumn.length === 0 ? (
                                     <div className="empty-zone">{col.emptyMsg}</div>

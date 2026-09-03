@@ -10,6 +10,7 @@ import {
     labelForOrderSoundMode,
 } from '../utils/orderNotificationPrefs';
 import { openHeaderPopover, listenHeaderPopoverOpen } from '../utils/headerPopoverEvents';
+import { ADMIN_SHELL_COMPACT_MAX } from '../constants/responsive';
 
 function getPopoverPortalParent() {
     if (typeof document === "undefined") return null;
@@ -38,7 +39,7 @@ export default function OrderNotificationSoundControl() {
         const vv = window.visualViewport;
         const viewportWidth = vv?.width ?? window.innerWidth;
         const offsetLeft = vv?.offsetLeft ?? 0;
-        const isMobile = viewportWidth <= 1024;
+        const isMobile = viewportWidth <= ADMIN_SHELL_COMPACT_MAX;
         if (isMobile) {
             const top = Math.max(54, r.bottom + 8);
             setPopoverPos({
