@@ -52,7 +52,7 @@
     font-weight: 700;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     white-space: nowrap;
     font-family: inherit;
 }
@@ -106,7 +106,8 @@
     color: white;
     border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
+        border-color 0.2s ease, color 0.2s ease;
     background: var(--accent-primary, #3b82f6);
 }
 
@@ -124,7 +125,7 @@
     font-weight: 600;
     padding: 6px 10px;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease, background 0.2s ease;
 }
 
 .admin-layout .cash-container .btn-text:hover {
@@ -143,7 +144,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .admin-layout .cash-container .btn-close:hover {
@@ -226,7 +227,7 @@
     padding: 14px 16px;
     font-size: 0.95rem;
     color: var(--c-text);
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     font-family: inherit;
     box-sizing: border-box;
 }
@@ -294,7 +295,10 @@
     gap: 14px;
     position: relative;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
     text-align: center;
 }
@@ -441,7 +445,11 @@
     font-weight: 750 !important;
     font-family: inherit !important;
     cursor: pointer !important;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     background: #f8fafc !important;
     color: #0f172a !important;
     border: 1px solid #e2e8f0 !important;
@@ -617,7 +625,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.3s ease;
+    transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .admin-layout .filter-input-group:focus-within {
@@ -853,7 +861,8 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    transition: all 0.3s var(--expo-out);
+    transition: transform 0.3s var(--expo-out), border-color 0.3s var(--expo-out),
+        background 0.3s var(--expo-out), box-shadow 0.3s var(--expo-out);
     box-shadow: var(--shadow-heavy);
 }
 
@@ -1034,8 +1043,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    /* 44px: el icono sigue siendo de 16px, lo que crece es el area pulsable */
+    width: 44px;
+    height: 44px;
+    touch-action: manipulation;
     margin: 0;
     padding: 0;
     border: none;
@@ -1573,7 +1584,10 @@
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-layout .cash-method-metric:hover {
@@ -2654,10 +2668,14 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    /* 44px de alto: era una linea de texto de 14px, imposible de acertar con el dedo */
+    min-height: 44px;
     margin: 0;
-    padding: 0;
+    padding: 0 8px;
     border: none;
+    border-radius: 10px;
     background: transparent;
+    touch-action: manipulation;
     color: var(--admin-accent, var(--c-balance));
     font-size: 0.74rem;
     font-weight: 650;
@@ -2668,7 +2686,13 @@
 }
 
 .admin-layout .cash-container .cash-shift-close-fill-all:hover {
+    background: var(--cash-surface-hover);
     text-decoration: underline;
+}
+
+.admin-layout .cash-container .cash-shift-close-fill-all:focus-visible {
+    outline: 2px solid var(--admin-accent, var(--c-balance));
+    outline-offset: 2px;
 }
 
 .admin-layout .cash-container .cash-shift-close-methods {
@@ -2748,23 +2772,37 @@
     color: var(--c-text-muted);
 }
 
+/* Chip pulsable, no texto suelto: antes eran 14px de alto y se confundia con
+   la etiqueta "CONTADO" de al lado. Minimo tactil 44px. */
 .admin-layout .cash-container .cash-shift-close-method__use-expected {
     grid-area: use;
     justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     margin: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--c-text-muted);
-    font-size: 0.72rem;
-    font-weight: 600;
+    padding: 0 12px;
+    border: 1px solid var(--cash-border);
+    border-radius: 10px;
+    background: var(--admin-icon-bg);
+    color: var(--admin-accent, var(--c-balance));
+    font-size: 0.75rem;
+    font-weight: 650;
     font-family: inherit;
+    white-space: nowrap;
     cursor: pointer;
-    line-height: 1.2;
+    touch-action: manipulation;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .admin-layout .cash-container .cash-shift-close-method__use-expected:hover {
-    color: var(--admin-accent, var(--c-balance));
+    background: var(--cash-surface-hover);
+    border-color: color-mix(in srgb, var(--c-balance) 45%, var(--cash-border));
+}
+
+.admin-layout .cash-container .cash-shift-close-method__use-expected:focus-visible {
+    outline: 2px solid var(--admin-accent, var(--c-balance));
+    outline-offset: 2px;
 }
 
 .admin-layout .cash-container .cash-shift-close-method__count .cash-dialog__amount-wrap {
@@ -2920,8 +2958,22 @@
 }
 
 @media (max-width: 560px) {
+    /* Tres columnas tambien en movil: los tres valores son cortos y apilarlos
+       gastaba media pantalla antes de llegar al cuadre, que es la tarea. */
     .admin-layout .cash-container .cash-shift-close-summary {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .admin-layout .cash-container .cash-shift-close-summary__value {
+        font-size: 0.8rem;
+    }
+
+    /* El chip cabe entero bajo la etiqueta en pantallas estrechas */
+    .admin-layout .cash-container .cash-shift-close-method__count {
+        grid-template-areas:
+            "label use"
+            "input input";
     }
 }
 
@@ -3915,4 +3967,32 @@
         max-width: none;
         width: 100%;
     }
+}
+
+/* =========================================
+   MOVIMIENTO REDUCIDO
+   El sistema de caja lo usa gente durante horas; si el equipo pide menos
+   movimiento, se respeta. No habia ninguna regla para esto.
+   ========================================= */
+@media (prefers-reduced-motion: reduce) {
+    .admin-layout .cash-container *,
+    .admin-layout .cash-container *::before,
+    .admin-layout .cash-container *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Sin retardo de 300ms por doble toque en los controles del dialogo */
+.admin-layout .cash-container .cash-dialog button,
+.admin-layout .cash-container .cash-dialog input {
+    touch-action: manipulation;
+}
+
+/* El scroll del dialogo no arrastra la pagina de debajo */
+.admin-layout .cash-container .cash-dialog__body,
+.admin-layout .cash-container .cash-shift-close-sales-scroll {
+    overscroll-behavior: contain;
 }

@@ -23,6 +23,7 @@ import { filterOpenOrderSessions, getOrderTileKind } from '@/shared/utils/orderU
 import DeliveryMotoIcon from '../DeliveryMotoIcon';
 import { formatShiftDuration } from '../../utils/shiftDuration';
 import { Button } from '@/components/ui/button';
+import { parseMoneyInput, minorToMajor, toAmountInputValue } from '@/shared/utils/money';
 
 function DiffBadge({ expected, counted, fmt }) {
 	const { diff, status } = diffCounted(expected, counted);
@@ -43,9 +44,8 @@ function DiffBadge({ expected, counted, fmt }) {
 	);
 }
 
-function MethodCountRow({ id, label, Icon, expected, value, onChange, onUseExpected, fmt, currency }) {
-	const counted = parseFloat(value);
-	const hasValue = value !== '' && !Number.isNaN(counted) && counted >= 0;
+function MethodCountRow({ id, label, Icon, expected, value, counted, onChange, onUseExpected, fmt, currency }) {
+	const hasValue = counted != null;
 	return (
 		<div className={`cash-shift-close-method${hasValue ? ' is-filled' : ''}`}>
 			<div className="cash-shift-close-method__head">
@@ -67,9 +67,9 @@ function MethodCountRow({ id, label, Icon, expected, value, onChange, onUseExpec
 					</span>
 					<input
 						id={id}
-						type="number"
-						min="0"
-						step="1"
+						type="text"
+						inputMode="decimal"
+						autoComplete="off"
 						className="form-input cash-dialog__amount-input"
 						placeholder="0"
 						value={value}
@@ -80,7 +80,8 @@ function MethodCountRow({ id, label, Icon, expected, value, onChange, onUseExpec
 					type="button"
 					className="cash-shift-close-method__use-expected"
 					onClick={onUseExpected}
-					title="Copiar el monto esperado"
+					title={`Copiar el monto esperado de ${label}`}
+					aria-label={`Usar el esperado de ${label}: ${fmt(expected)}`}
 				>
 					Usar esperado
 				</button>
@@ -88,12 +89,6 @@ function MethodCountRow({ id, label, Icon, expected, value, onChange, onUseExpec
 			{hasValue ? <DiffBadge expected={expected} counted={counted} fmt={fmt} /> : null}
 		</div>
 	);
-}
-
-function parseNonNegative(val) {
-	const n = parseFloat(val);
-	if (Number.isNaN(n) || n < 0) return null;
-	return n;
 }
 
 const CashShiftModal = ({
@@ -106,8 +101,42 @@ const CashShiftModal = ({
 	getTotals,
 	orders = [],
 }) => {
-	const { formatMoney: fmt, currency } = useBranchMoney();
+	const { formatMoney: fmt, currency, locale, fractionDigits } = useBranchMoney();
+	/* "Usar esperado" escribe con el separador decimal del país y los decimales de
+	   la moneda, para que el campo muestre lo mismo que la etiqueta "Esperado". */
+	const toInputValue = (amount) => toAmountInputValue(amount, { locale, fractionDigits });
+	/* El cajero teclea a mano, así que acepta coma o punto según su país
+	   ("15,20" y "15.20" valen lo mismo). parseFloat no sirve aquí: se come los
+	   centavos en silencio (parseFloat('15,20') === 15). Devuelve null si el
+	   texto no es un importe válido o si es negativo. */
+	const parseAmount = (raw) => {
+		if (raw === '' || raw == null) return null;
+		const parsed = parseMoneyInput(raw, { currency, fractionDigits, locale });
+		if (!parsed.valid) return null;
+		return minorToMajor(parsed.minor, currency, fractionDigits);
+	};
 	const { formatOrderAmount } = useOrderMoney();
+	/* autoFocus solo donde hay teclado físico: en móvil levantaba el teclado
+	   virtual nada más abrir y tapaba medio diálogo. */
+	const prefersPointerFocus = typeof window !== 'undefined'
+		&& typeof window.matchMedia === 'function'
+		&& window.matchMedia('(pointer: fine)').matches;
+	/* Fechas y horas con el locale de la sucursal. Estaban fijadas a 'es-CL',
+	   así que un local de otro país veía el formato chileno. */
+	const dateTimeFmt = useMemo(
+		() => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }),
+		[locale],
+	);
+	const timeFmt = useMemo(
+		() => new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }),
+		[locale],
+	);
+	/* Intl.format lanza RangeError con una fecha invalida (toLocaleString solo
+	   devolvia "Invalid Date"), y una fila sin fecha no debe tumbar el dialogo. */
+	const formatWith = (formatter, value) => {
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? '—' : formatter.format(date);
+	};
 	const [amount, setAmount] = useState('');
 	const [countedCash, setCountedCash] = useState('');
 	const [countedCard, setCountedCard] = useState('');
@@ -140,9 +169,9 @@ const CashShiftModal = ({
 
 	const openCount = openSessions.length;
 
-	const cashNum = parseNonNegative(countedCash);
-	const cardNum = parseNonNegative(countedCard);
-	const onlineNum = parseNonNegative(countedOnline);
+	const cashNum = parseAmount(countedCash);
+	const cardNum = parseAmount(countedCard);
+	const onlineNum = parseAmount(countedOnline);
 	const countsFilled = cashNum !== null && cardNum !== null && onlineNum !== null;
 	const canClose = countsFilled && openCount === 0;
 
@@ -175,20 +204,31 @@ const CashShiftModal = ({
 
 	useLockBodyScroll(isOpen);
 
+	/* Cerrar con Escape: hasta ahora el diálogo solo se cerraba con el ratón
+	   (clic en el fondo o en la X), inaccesible por teclado. */
+	useEffect(() => {
+		if (!isOpen) return undefined;
+		const onKeyDown = (event) => {
+			if (event.key === 'Escape') onClose();
+		};
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [isOpen, onClose]);
+
 	if (!isOpen) return null;
 
 	const fillAllExpected = () => {
-		setCountedCash(String(expectedByMethod.cash));
-		setCountedCard(String(expectedByMethod.card));
-		setCountedOnline(String(expectedByMethod.online));
+		setCountedCash(toInputValue(expectedByMethod.cash));
+		setCountedCard(toInputValue(expectedByMethod.card));
+		setCountedOnline(toInputValue(expectedByMethod.online));
 		setError('');
 	};
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		if (isOpening) {
-			const numAmount = parseFloat(amount);
-			if (Number.isNaN(numAmount) || numAmount < 0) {
+			const numAmount = parseAmount(amount);
+			if (numAmount === null) {
 				setError('Ingresa un monto válido');
 				return;
 			}
@@ -197,9 +237,9 @@ const CashShiftModal = ({
 			return;
 		}
 
-		const cash = parseNonNegative(countedCash);
-		const card = parseNonNegative(countedCard);
-		const online = parseNonNegative(countedOnline);
+		const cash = parseAmount(countedCash);
+		const card = parseAmount(countedCard);
+		const online = parseAmount(countedOnline);
 		if (cash === null) {
 			setError('Ingresa el efectivo físico contado');
 			return;
@@ -255,12 +295,12 @@ const CashShiftModal = ({
 									</span>
 									<input
 										id="cash-shift-open-amount"
-										type="number"
-										min="0"
-										step="any"
+										type="text"
+										inputMode="decimal"
+										autoComplete="off"
 										className="form-input cash-dialog__amount-input"
 										placeholder="0"
-										autoFocus
+										autoFocus={prefersPointerFocus}
 										value={amount}
 										onChange={(e) => setAmount(e.target.value)}
 										required
@@ -275,10 +315,7 @@ const CashShiftModal = ({
 											<span className="cash-shift-close-summary__label">Abierto</span>
 											<span className="cash-shift-close-summary__value">
 												<Clock size={13} aria-hidden />
-												{new Date(activeShift.opened_at).toLocaleString('es-CL', {
-													dateStyle: 'short',
-													timeStyle: 'short',
-												})}
+												{formatWith(dateTimeFmt, activeShift.opened_at)}
 											</span>
 										</div>
 										<div className="cash-shift-close-summary__item">
@@ -342,8 +379,9 @@ const CashShiftModal = ({
 										Icon={DollarSign}
 										expected={expectedByMethod.cash}
 										value={countedCash}
+										counted={cashNum}
 										onChange={setCountedCash}
-										onUseExpected={() => setCountedCash(String(expectedByMethod.cash))}
+										onUseExpected={() => setCountedCash(toInputValue(expectedByMethod.cash))}
 										fmt={fmt}
 										currency={currency}
 									/>
@@ -353,8 +391,9 @@ const CashShiftModal = ({
 										Icon={CreditCard}
 										expected={expectedByMethod.card}
 										value={countedCard}
+										counted={cardNum}
 										onChange={setCountedCard}
-										onUseExpected={() => setCountedCard(String(expectedByMethod.card))}
+										onUseExpected={() => setCountedCard(toInputValue(expectedByMethod.card))}
 										fmt={fmt}
 										currency={currency}
 									/>
@@ -364,8 +403,9 @@ const CashShiftModal = ({
 										Icon={Smartphone}
 										expected={expectedByMethod.online}
 										value={countedOnline}
+										counted={onlineNum}
 										onChange={setCountedOnline}
-										onUseExpected={() => setCountedOnline(String(expectedByMethod.online))}
+										onUseExpected={() => setCountedOnline(toInputValue(expectedByMethod.online))}
 										fmt={fmt}
 										currency={currency}
 									/>
@@ -438,10 +478,7 @@ const CashShiftModal = ({
 													{salesRows.map((row) => (
 														<tr key={row.id}>
 															<td className="cash-shift-close-sales-table__time">
-																{new Date(row.at).toLocaleTimeString('es-CL', {
-																	hour: '2-digit',
-																	minute: '2-digit',
-																})}
+																{formatWith(timeFmt, row.at)}
 															</td>
 															<td>{row.label}</td>
 															<td>{row.methodLabel}</td>
@@ -478,10 +515,7 @@ const CashShiftModal = ({
 												{otherRows.map((row) => (
 													<li key={row.id}>
 														<span className="cash-shift-close-other-list__time">
-															{new Date(row.at).toLocaleTimeString('es-CL', {
-																hour: '2-digit',
-																minute: '2-digit',
-															})}
+															{formatWith(timeFmt, row.at)}
 														</span>
 														<span>{row.label}</span>
 														<span className="cash-shift-close-other-list__method">

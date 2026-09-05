@@ -51,6 +51,32 @@ export function fractionDigitsForCurrency(currency, override) {
 }
 
 /**
+ * Texto para un input de dinero que el usuario edita a mano.
+ *
+ * Usa el separador decimal del locale (es-VE -> "74,60") y nunca separador de
+ * miles, para que `parseMoneyInput` lo relea sin ambiguedad. No escribas el
+ * numero crudo: String(74.60000000000001) acaba en el campo tal cual.
+ * @param {unknown} amount
+ * @param {{ locale?: string, fractionDigits?: number }} [options]
+ * @returns {string}
+ */
+export function toAmountInputValue(amount, options = {}) {
+	const digits = Number.isFinite(options.fractionDigits)
+		? Math.max(0, Math.trunc(options.fractionDigits))
+		: 2;
+	const value = safeNumber(amount, 0);
+	try {
+		return new Intl.NumberFormat(options.locale, {
+			minimumFractionDigits: digits,
+			maximumFractionDigits: digits,
+			useGrouping: false,
+		}).format(value);
+	} catch {
+		return value.toFixed(digits);
+	}
+}
+
+/**
  * @param {unknown} amount
  * @param {{ currency?: string, locale?: string, fractionDigits?: number }} [opts]
  * @returns {string}
@@ -109,7 +135,7 @@ export function formatMoneyOrFree(amount, freeLabel = 'GRATIS') {
 /**
  * @param {BranchMoneySource | null | undefined} branch
  * @param {{ currency?: string | null; country?: string | null } | null | undefined} [company]
- * @returns {{ currency: string, locale: string, formatMoney: (amount: unknown) => string, formatMoneyPlain: (amount: unknown) => string }}
+ * @returns {{ currency: string, locale: string, fractionDigits: number, formatMoney: (amount: unknown) => string, formatMoneyPlain: (amount: unknown) => string }}
  */
 export function createMoneyFormatter(branch, company) {
 	const currency = resolveEffectiveCurrency(branch, company);
@@ -127,6 +153,7 @@ export function createMoneyFormatter(branch, company) {
 	return {
 		currency,
 		locale,
+		fractionDigits,
 		formatMoney: (amount) => formatMoney(amount, { currency, locale, fractionDigits }),
 		formatMoneyPlain: (amount) => formatMoneyPlain(amount, locale),
 	};
